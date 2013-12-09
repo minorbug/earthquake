@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+
+        <link rel="stylesheet" href="css/normalize.css">
+        <link rel="stylesheet" href="css/main.css">
+        <link rel="stylesheet" href="css/earthquake.css">
+        <script src="js/vendor/modernizr-2.6.2.min.js"></script>
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+        <div id="header" class="clearfix">
+            <div class="title">Earthquake</div>
+            <div class="options">Show all</div>
+        </div>
+        <!--<div id="footer">inspired by "Earthquake" planetarium exhibit at the California Academy of Sciences</div>-->
+        <div id="eqScene"></div>
+
+
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.2.min.js"><\/script>')</script>
+        <script src="js/Detector.js"></script>
+        <script src="js/three.js"></script>
+        <script src="js/three.geospatial.js"></script>
+        <script src="js/geojson.js"></script>
+        <!-- ---------------- Custom Shader Code ------------------------ -->
+        <script id="vertexShader" type="x-shader/x-vertex">
+        varying vec2 vUv;
+        void main()
+        {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        }
+        </script>
+
+                <!-- fragment shader a.k.a. pixel shader -->
+                <script id="fragmentShader" type="x-shader/x-vertex">
+        uniform sampler2D baseTexture;
+        uniform float baseSpeed;
+        uniform sampler2D noiseTexture;
+        uniform float noiseScale;
+        uniform float alpha;
+        uniform float time;
+
+        varying vec2 vUv;
+        void main()
+        {
+            vec2 uvTimeShift = vUv + vec2( -0.7, 1.5 ) * time * baseSpeed;
+            vec4 noiseGeneratorTimeShift = texture2D( noiseTexture, uvTimeShift );
+            vec2 uvNoiseTimeShift = vUv + noiseScale * vec2( noiseGeneratorTimeShift.r, noiseGeneratorTimeShift.b );
+            vec4 baseColor = texture2D( baseTexture, uvNoiseTimeShift );
+
+            baseColor.a = alpha;
+            gl_FragColor = baseColor;
+        }
+        </script>
+        <!-- ----------------------------------------------------------- -->
+        <script src="js/main.js"></script>
+
+        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+        <script>
+            (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+            function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+            e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+            e.src='//www.google-analytics.com/analytics.js';
+            r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+            ga('create','UA-XXXXX-X');ga('send','pageview');
+        </script>
+    </body>
+</html>

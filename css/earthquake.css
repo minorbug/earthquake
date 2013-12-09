@@ -1,0 +1,15 @@
+#header {
+    color:white;
+    background-color:black;
+    font-size:1.3em;
+    padding:8px;
+}
+
+#header .options{
+    float:right;
+    text-align:right;
+}
+#header .title{
+    float:left;
+    font-weight:800;
+}
