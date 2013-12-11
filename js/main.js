@@ -42,14 +42,15 @@
 
 
     // Touch and click rotation tracking
-    var targetRotationX = 0;
-    var targetRotationY = 0;
-    var targetRotationOnMouseDownX = 0;
-    var targetRotationOnMouseDownY = 0;
-    var mouseX = 0;
-    var mouseY = 0;
-    var mouseXOnMouseDown = 0;
-    var mouseYOnMouseDown = 0;
+    var targetRotationX = 0,
+        targetRotationY = 0,
+        targetCameraRotationY = 0,
+        targetRotationOnMouseDownX = 0,
+        targetRotationOnMouseDownY = 0,
+        mouseX = 0,
+        mouseY = 0,
+        mouseXOnMouseDown = 0,
+        mouseYOnMouseDown = 0;
 
     $(document).on('getEarthquakeData_success', function(event,data){
 
@@ -66,8 +67,8 @@
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(60, width / height, 1, 15000);
-    camera.position.y = 4100;
-    camera.position.x = -4100;
+    camera.position.y = 3900;
+    camera.position.x = -3900;
     camera.lookAt(new THREE.Vector3(CRUST_RADIUS,CRUST_RADIUS+1200,0));
 
     // Camera grouped into empty object with center at 0,0,0 (for easier rotating)
@@ -91,17 +92,18 @@
 
 
     scene.add(crust);
-   // scene.add(outerCore);
+    //scene.add(outerCore);
 
 
     sceneElement.appendChild(renderer.domElement);
     animate();
 
-    GeoJSON.loadEarthquakeData('2.5','week');
+    GeoJSON.loadEarthquakeData('all','week');
 
     function render(){
         camGroup.rotation.x += ( -targetRotationX - camGroup.rotation.x ) * 0.05;
         camGroup.rotation.z += ( targetRotationY - camGroup.rotation.z ) * 0.05;
+        camGroup.rotation.y += ( targetCameraRotationY - camGroup.rotation.y ) * 0.15;
         renderer.render(scene, camera);
     }
 
@@ -130,7 +132,7 @@
             {
                 map: new THREE.ImageUtils.loadTexture( 'img/spark.png' ),
                 useScreenCoordinates: false, alignment: new THREE.Vector2( 0, 0 ),
-                color: 0xff0000, transparent: true, opacity:markerOpacity, blending: THREE.AdditiveBlending
+                color: 0xff0000, transparent: true, opacity:markerOpacity, blending: THREE.NormalBlending
             });
         var sprite = new THREE.Sprite( spriteMaterial );
         sprite.scale.set(spriteSize, spriteSize,spriteSize);
@@ -178,10 +180,24 @@
         document.addEventListener( 'mouseup', onDocumentMouseUp, false );
         document.addEventListener( 'mouseout', onDocumentMouseOut, false );
 
+        // rotate camera controls (for PCs only. TODO: Add two-finger rotate for touch)
+        document.addEventListener("keydown", onDocumentKeyDown, false);
+
         mouseXOnMouseDown = event.clientX - windowHalfX;
         mouseYOnMouseDown = event.clientY - windowHalfY;
         targetRotationOnMouseDownX = targetRotationX;
         targetRotationOnMouseDownY = targetRotationY;
+    }
+
+    function onDocumentKeyDown(e){
+        var key = e.keyCode;
+        if (key === 65 || key === 37){  // "W" or left arrow
+            targetCameraRotationY += 0.5;
+        }
+        else if (key == 68 || key === 39){ // "D" or right arrow
+            targetCameraRotationY  -=  0.5;
+        }
+        console.log(targetCameraRotationY);
     }
 
     function onDocumentMouseMove( event ) {
