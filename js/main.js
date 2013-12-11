@@ -7,6 +7,7 @@
     }
 
     var clock = new THREE.Clock();
+    var projector = new THREE.Projector();
 
     var width  = window.innerWidth,
         height = window.innerHeight,
@@ -57,13 +58,14 @@
 
          for (var i=0, l=data.earthquakes.length; i<l;i++){
             var eq = data.earthquakes[i];
-            addMarkerToCrust(crust,eq.lat,eq.lng,eq.depth,eq.magnitude);
+            addMarkerToCrust(crust,eq);
         }
     });
 
     document.addEventListener( 'mousedown', onDocumentMouseDown, false );
     document.addEventListener( 'touchstart', onDocumentTouchStart, false );
     document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+    window.addEventListener( 'resize', onWindowResize, false );
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(60, width / height, 1, 15000);
@@ -81,6 +83,9 @@
 
     // Lights
     scene.add(new THREE.AmbientLight(0xCC3333));
+
+    // Markers
+    var markers = [];
 
     var crust = createCrust(CRUST_RADIUS, SEGMENTS),
         outerCore = createOuterCore(OUTER_CORE_RADIUS, SEGMENTS);
@@ -114,18 +119,23 @@
         customUniforms.time.value += delta;
     }
 
-    function addMarkerToCrust(crustModel,lat,lng,depth, magnitude){
+    function addMarkerToCrust(crustModel,data){
+
+        var marker = createMarker(data);
+        markers.push(marker);
         crustModel.addGeoSymbol(
-            new THREE.GeoSpatialMap.GeoSymbol(createMarker(magnitude), {
-                phi: lat,
-                lambda: lng,
-                depth: depth
+            new THREE.GeoSpatialMap.GeoSymbol(marker, {
+                phi: data.lat,
+                lambda: data.lng,
+                depth: data.depth
             })
         );
     }
 
-    function createMarker(magnitude){
+    function createMarker(data){
+
         var marker = new THREE.Object3D(),
+            magnitude = data.magnitude,
             spriteSize = 10*magnitudeRadii[Math.round(magnitude)],
             markerOpacity = (magnitude/10);
         var spriteMaterial = new THREE.SpriteMaterial(
@@ -142,6 +152,9 @@
             new THREE.SphereGeometry(magnitudeRadii[Math.round(magnitude)], 4, 4),
             new THREE.MeshLambertMaterial( { visible:false } )
         ));
+
+        // Add earthquake data to marker
+        marker.userData = data;
 
         return marker;
 
@@ -172,9 +185,34 @@
         );
     }
 
+    function detectMarkerSelect(event, callback){
+
+        var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+        projector.unprojectVector( vector, camera );
+
+        var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+        var intersects = raycaster.intersectObjects( markers, true );
+
+        if ( intersects.length > 0 ) {
+
+            callback(intersects[ 0 ]);
+
+        }
+    }
+
+    function onMarkerSelect(intersect){
+        console.log(intersect.object.parent.userData.title);
+    }
+
     function onDocumentMouseDown( event ) {
 
         event.preventDefault();
+
+
+        detectMarkerSelect(event, onMarkerSelect);
+
+
 
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
         document.addEventListener( 'mouseup', onDocumentMouseUp, false );
@@ -199,6 +237,8 @@
         }
         console.log(targetCameraRotationY);
     }
+
+
 
     function onDocumentMouseMove( event ) {
 
@@ -249,6 +289,12 @@
             targetRotationY = targetRotationOnMouseDownY + ( mouseY - mouseYOnMouseDown ) * 0.05;
 
         }
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
     }
 
 })();
