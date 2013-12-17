@@ -1,4 +1,4 @@
-(function(){
+
     var sceneElement = document.getElementById('eqScene');
 
     if (!Detector.webgl) {
@@ -7,8 +7,16 @@
     }
 
     var clock = new THREE.Clock();
-    var projector = new THREE.Projector();
+    var debugEl = document.getElementById("debug");
 
+
+    var selectInfo = {
+        x: 0,
+        y: 0,
+        userHasSelected: false
+    };
+
+    // Screen size
     var width  = window.innerWidth,
         height = window.innerHeight,
         windowHalfX = width / 2,
@@ -67,28 +75,30 @@
     document.addEventListener( 'touchmove', onDocumentTouchMove, false );
     window.addEventListener( 'resize', onWindowResize, false );
 
-    var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(60, width / height, 1, 15000);
-    camera.position.y = 3900;
-    camera.position.x = -3900;
-    camera.lookAt(new THREE.Vector3(CRUST_RADIUS,CRUST_RADIUS+1200,0));
+    var scene = new THREE.Scene(),
+        camera = new THREE.PerspectiveCamera(40, width / height, 1, 20000),
+        cameraWorldPosition = new THREE.Vector3();
+
+    camera.position.y = -4100;
+    camera.position.x = 4100;
+    camera.lookAt(new THREE.Vector3(CRUST_RADIUS,CRUST_RADIUS+200,0));
 
     // Camera grouped into empty object with center at 0,0,0 (for easier rotating)
     var camGroup = new THREE.Object3D();
     camGroup.add(camera);
     scene.add(camGroup);
 
-    var renderer = new THREE.WebGLRenderer( {antialiasing: true });
+    var projector = new THREE.Projector(),
+        renderer  = new THREE.WebGLRenderer( {antialiasing: true });
+
     renderer.setSize(width, height);
 
     // Lights
     scene.add(new THREE.AmbientLight(0xCC3333));
 
-    // Markers
-    var markers = [];
-
     var crust = createCrust(CRUST_RADIUS, SEGMENTS),
-        outerCore = createOuterCore(OUTER_CORE_RADIUS, SEGMENTS);
+        outerCore = createOuterCore(OUTER_CORE_RADIUS, SEGMENTS),
+        markers = [];
 
 
 
@@ -106,9 +116,20 @@
     GeoJSON.loadEarthquakeData('all','week');
 
     function render(){
+
         camGroup.rotation.x += ( -targetRotationX - camGroup.rotation.x ) * 0.05;
         camGroup.rotation.z += ( targetRotationY - camGroup.rotation.z ) * 0.05;
         camGroup.rotation.y += ( targetCameraRotationY - camGroup.rotation.y ) * 0.15;
+
+        scene.updateMatrixWorld();
+
+        cameraWorldPosition.setFromMatrixPosition( camera.matrixWorld );
+
+        if (selectInfo.userHasSelected){
+            selectInfo.userHasSelected = false;
+            checkSelectInfo();
+        }
+
         renderer.render(scene, camera);
     }
 
@@ -123,6 +144,7 @@
 
         var marker = createMarker(data);
         markers.push(marker);
+
         crustModel.addGeoSymbol(
             new THREE.GeoSpatialMap.GeoSymbol(marker, {
                 phi: data.lat,
@@ -150,7 +172,7 @@
 
         marker.add(new THREE.Mesh(
             new THREE.SphereGeometry(magnitudeRadii[Math.round(magnitude)], 4, 4),
-            new THREE.MeshLambertMaterial( { visible:false } )
+            new THREE.MeshLambertMaterial( { visible:true } )
         ));
 
         // Add earthquake data to marker
@@ -165,7 +187,7 @@
             new THREE.SphereGeometry(radius, segments, segments),
             new THREE.MeshBasicMaterial({
                 map:  THREE.ImageUtils.loadTexture('img/world.jpg'),
-                side: THREE.BackSide,
+                side: THREE.DoubleSide,
                 specular:    new THREE.Color('grey')
             })
         );
@@ -185,24 +207,31 @@
         );
     }
 
-    function detectMarkerSelect(event, callback){
+    function checkSelectInfo(){
 
-        var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+        console.log("checkSelectInfo");
+        console.log(selectInfo);
+        var vector = new THREE.Vector3((selectInfo.x / window.innerWidth) * 2 - 1, -(selectInfo.y / window.innerHeight) * 2 + 1, 0.5);
         projector.unprojectVector( vector, camera );
 
-        var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+        var raycaster = new THREE.Raycaster( cameraWorldPosition, vector.sub( cameraWorldPosition ).normalize() );
 
-        var intersects = raycaster.intersectObjects( markers, true );
+        var intersects;
 
-        if ( intersects.length > 0 ) {
-
-            callback(intersects[ 0 ]);
-
+        intersects = raycaster.intersectObjects( markers,true );
+        console.log (intersects);
+        for(var i= 0, l=intersects.length;i<l;i++){
+            if (intersects[i].object instanceof THREE.Sprite){
+                onMarkerSelect(intersects[ i ]);
+                break;
+            }
         }
+
     }
 
     function onMarkerSelect(intersect){
-        console.log(intersect.object.parent.userData.title);
+        debugEl.innerHTML = (intersect.object.parent.userData.title);
+        // console.log(intersect.object);
     }
 
     function onDocumentMouseDown( event ) {
@@ -210,8 +239,10 @@
         event.preventDefault();
 
 
-        detectMarkerSelect(event, onMarkerSelect);
-
+        // Handle the detecting in the render loop, not here. Just record what happened for now.
+        selectInfo.userHasSelected = true;
+        selectInfo.x = event.clientX;
+        selectInfo.y = event.clientY;
 
 
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
@@ -225,6 +256,7 @@
         mouseYOnMouseDown = event.clientY - windowHalfY;
         targetRotationOnMouseDownX = targetRotationX;
         targetRotationOnMouseDownY = targetRotationY;
+
     }
 
     function onDocumentKeyDown(e){
@@ -237,7 +269,6 @@
         }
         console.log(targetCameraRotationY);
     }
-
 
 
     function onDocumentMouseMove( event ) {
@@ -254,6 +285,7 @@
         document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
         document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
         document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+
     }
 
     function onDocumentMouseOut( event ) {
@@ -268,6 +300,10 @@
         if ( event.touches.length == 1 ) {
 
             event.preventDefault();
+
+            selectInfo.userHasSelected = true;
+            selectInfo.x = event.clientX;
+            selectInfo.y = event.clientY;
 
             mouseXOnMouseDown = event.touches[ 0 ].pageX - windowHalfX;
             mouseYOnMouseDown = event.touches[ 0 ].pageY - windowHalfY;
@@ -297,4 +333,3 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
     }
 
-})();
