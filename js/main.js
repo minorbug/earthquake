@@ -94,7 +94,7 @@
     renderer.setSize(width, height);
 
     // Lights
-    scene.add(new THREE.AmbientLight(0xCC3333));
+    scene.add(new THREE.AmbientLight(0xffa500));
 
     var crust = createCrust(CRUST_RADIUS, SEGMENTS),
         outerCore = createOuterCore(OUTER_CORE_RADIUS, SEGMENTS),
@@ -164,7 +164,7 @@
             {
                 map: new THREE.ImageUtils.loadTexture( 'img/spark.png' ),
                 useScreenCoordinates: false, alignment: new THREE.Vector2( 0, 0 ),
-                color: 0xff0000, transparent: true, opacity:markerOpacity, blending: THREE.NormalBlending
+                color: 0xffffff, transparent: true, opacity:markerOpacity, blending: THREE.NormalBlending
             });
         var sprite = new THREE.Sprite( spriteMaterial );
         sprite.scale.set(spriteSize, spriteSize,spriteSize);
