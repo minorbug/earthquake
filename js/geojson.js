@@ -29,7 +29,7 @@ var GeoJSON = (function(){
                           lat:featuresArray[i].geometry.coordinates[1],
                           depth:featuresArray[i].geometry.coordinates[2],
                           magnitude:featuresArray[i].properties.mag,
-                          title:featuresArray[i].properties.title
+                          title:featuresArray[i].properties.place
                       });
                     }
                     $(document).trigger('getEarthquakeData_success', { message: 'Earthquake data received successfully.', earthquakes:earthquakes });

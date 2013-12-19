@@ -1,15 +1,68 @@
 #header {
     color:white;
-    background-color:black;
-    font-size:1.3em;
-    padding:8px;
+    font-size:24px;
+    font-weight:800;
+    position:absolute;
+    top:5px;
+    left:5px;
 }
 
-#header .options{
-    float:right;
-    text-align:right;
+#detail {
+    display:none;
+    position:absolute;
+    bottom:0px;
+    right:0px;
+    width:400px;
+    height:100px;
+    word-wrap: break-word;
+    background: black no-repeat top left;
+    color:white;
+    -webkit-box-shadow: 0 0 30px 5px rgba(255,0,0,1);
+    box-shadow: 0 0 30px 5px rgba(255,0,0,1);
 }
-#header .title{
-    float:left;
+
+#detail-location {
+    position:absolute;
+    top:5px;
+    left:5px;
+    font-size:14px;
+    line-height: 14px;
+    font-weight:100;
+}
+
+#detail .marker {
+    position:absolute;
+    top:38px;
+    left:188px;
+    width:24px;
+    height:24px;
+    background: transparent url(../img/pin.gif) no-repeat 0px 0px;
+}
+
+#detail-magnitude {
+    position:absolute;
+    top:5px;
+    right:5px;
+    font-size:24px;
     font-weight:800;
+    color:orange;
+    text-align: right;
+}
+
+#detail-magnitude h1,#detail-depth h1{
+    font-size:10px;
+    text-transform: uppercase;
+    line-height:10px;
+    margin:0;
+    padding:0;
+}
+
+#detail-depth {
+    position:absolute;
+    bottom:5px;
+    right:5px;
+    font-size:14px;
+    font-weight:800;
+    color:red;
+    text-align: right;
 }

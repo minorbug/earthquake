@@ -44,7 +44,14 @@
         alpha: 			{ type: "f", value: 1.0 },
         time: 			{ type: "f", value: 1.0 }
     };
-    console.log(customUniforms);
+
+    var lavaShader = new THREE.ShaderMaterial(
+        {
+            uniforms: customUniforms,
+            vertexShader:   document.getElementById( 'vertexShader'   ).textContent,
+            fragmentShader: document.getElementById( 'fragmentShader' ).textContent
+        }
+    );
 
     // MagnitudeLUT (will round to nearest integer);
     var magnitudeRadii = [10, 12.5, 20, 37.5, 50, 72.5, 100, 132.5, 170, 212.5, 260];
@@ -94,7 +101,13 @@
     renderer.setSize(width, height);
 
     // Lights
-    scene.add(new THREE.AmbientLight(0xffa500));
+    scene.add(new THREE.AmbientLight(0x660000));
+
+    var light = new THREE.PointLight( 0xffffff, 3, 10000 );
+    light.position.set( 0, 0, 0 );
+
+
+    scene.add( light );
 
     var crust = createCrust(CRUST_RADIUS, SEGMENTS),
         outerCore = createOuterCore(OUTER_CORE_RADIUS, SEGMENTS),
@@ -172,7 +185,7 @@
 
         marker.add(new THREE.Mesh(
             new THREE.SphereGeometry(magnitudeRadii[Math.round(magnitude)], 4, 4),
-            new THREE.MeshLambertMaterial( { visible:true } )
+            new THREE.MeshLambertMaterial( { visible:true, color: 0xffa500 } )
         ));
 
         // Add earthquake data to marker
@@ -185,10 +198,13 @@
     function createCrust(radius, segments) {
         return new THREE.GeoSpatialMap(
             new THREE.SphereGeometry(radius, segments, segments),
-            new THREE.MeshBasicMaterial({
+            new THREE.MeshPhongMaterial({
                 map:  THREE.ImageUtils.loadTexture('img/world.jpg'),
                 side: THREE.DoubleSide,
-                specular:    new THREE.Color('grey')
+                shading: THREE.SmoothShading,
+                shininess: 100,
+                ambient: 0x000000,
+                specular:    new THREE.Color('black')
             })
         );
     }
@@ -197,13 +213,7 @@
         console.log(customUniforms);
         return new THREE.Mesh(
             new THREE.SphereGeometry(radius, segments, segments),
-            new THREE.ShaderMaterial(
-                {
-                    uniforms: customUniforms,
-                    vertexShader:   document.getElementById( 'vertexShader'   ).textContent,
-                    fragmentShader: document.getElementById( 'fragmentShader' ).textContent
-                }
-            )
+            lavaShader
         );
     }
 
@@ -214,24 +224,47 @@
         var vector = new THREE.Vector3((selectInfo.x / window.innerWidth) * 2 - 1, -(selectInfo.y / window.innerHeight) * 2 + 1, 0.5);
         projector.unprojectVector( vector, camera );
 
-        var raycaster = new THREE.Raycaster( cameraWorldPosition, vector.sub( cameraWorldPosition ).normalize() );
-
-        var intersects;
+        var raycaster = new THREE.Raycaster( cameraWorldPosition, vector.sub( cameraWorldPosition ).normalize()),
+            intersects,
+            intersectFound = false;
 
         intersects = raycaster.intersectObjects( markers,true );
         console.log (intersects);
         for(var i= 0, l=intersects.length;i<l;i++){
             if (intersects[i].object instanceof THREE.Sprite){
-                onMarkerSelect(intersects[ i ]);
+                intersectFound = true;
+                $("#detail").fadeOut(500, function(){
+                    onMarkerSelect(intersects[ i ].object.parent);
+                });
                 break;
             }
         }
+        if (!intersectFound) $("#detail").fadeOut(1000);
 
     }
 
     function onMarkerSelect(intersect){
-        debugEl.innerHTML = (intersect.object.parent.userData.title);
-        // console.log(intersect.object);
+
+        var mapImageUrl = "http://maps.googleapis.com/maps/api/staticmap?center=###&zoom=2&format=png&sensor=false&size=400x100&maptype=roadmap&visual_refresh=true&style=feature:water|element:geometry.fill|color:0x000000|visibility:on&style=element:labels.text|visibility:off&style=feature:administrative|visibility:off&style=feature:landscape|visibility:on|color:0x1b264c&style=feature:transit|visibility:off&style=feature:poi|visibility:off";
+
+        crust.traverse(function(o){
+            var mesh = o.children[1];       //    Should be the Mesh
+            if (o.id === intersect.id){
+                console.log(mesh);
+
+                $("#detail-location").html(o.userData.title);
+                $("#detail-magnitude").html("<h1>Magnitude</h1>"+o.userData.magnitude);
+                $("#detail-depth").html("<h1>Depth</h1>"+Math.round(o.userData.depth*0.621371)+" miles");
+                $("#detail").css(
+                    'background-image', 'url('+mapImageUrl.replace("###", o.userData.lat+","+ o.userData.lng)+')'
+                ).fadeIn();
+
+                mesh.material.color.setHex(0xffffff);
+            } else {
+               if (mesh && mesh instanceof THREE.Mesh) mesh.material.color.setHex(0xffa500);
+            }
+        });
+
     }
 
     function onDocumentMouseDown( event ) {
