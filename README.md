@@ -18,6 +18,7 @@ Choose one of the following options:
 ## Credits / Libraries
 
 * jQuery
+* [jRumble](jackrugile.com/jrumble/)
 * [Three.js](http://threejs.org)
 * [Howler](https://github.com/goldfire/howler.js) - for future audio
 
