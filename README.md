@@ -1,61 +1,26 @@
-# [HTML5 Boilerplate](http://html5boilerplate.com)
+# [Earthquake]
 
-HTML5 Boilerplate is a professional front-end template for building fast,
-robust, and adaptable web apps or sites.
+Earthquake is a personal project that I decided to create to brush up on newer web technologies. I was inspired by the "Earthquake" exhibit at the California Academy of Sciences in San Francisco, which included a live planetarium view of earthquake activity, from below the Earth's surface. I decided to use WebGL to create a similar view.
 
-This project is the product of many years of iterative development and combined
-community knowledge. It does not impose a specific development philosophy or
-framework, so you're free to architect your code in the way that you want.
-
-* Source: [https://github.com/h5bp/html5-boilerplate](https://github.com/h5bp/html5-boilerplate)
-* Homepage: [http://html5boilerplate.com](http://html5boilerplate.com)
-* Twitter: [@h5bp](http://twitter.com/h5bp)
+* Source: [https://github.com/minorbug/earthquake](https://github.com/minorbug/earthquake)
+* Demo: [http://mattbaker.me/earthquake](http://mattbaker.me/earthquake)
+* Twitter: [@nerdmattbaker](http://twitter.com/nerdmattbaker)
 
 
 ## Quick start
 
 Choose one of the following options:
 
-1. Download the latest stable release from
-   [html5boilerplate.com](http://html5boilerplate.com/) or a custom build from
-   [Initializr](http://www.initializr.com).
-2. Clone the git repo — `git clone
-   https://github.com/h5bp/html5-boilerplate.git` - and checkout the tagged
-   release you'd like to use.
+1. View the page at [http://mattbaker.me/earthquake](http://mattbaker.me/earthquake). This will show you all of the earthquakes measured in the past 24 hours by the USGS.
+2. Use your mouse to move the camera around underneath the earth's crust (you can also use the "A" and "D" keys to rotate the camera if needed). Click on the quake markers to view depth and magnitude information.
 
 
-## Features
+## Credits / Libraries
 
-* HTML5 ready. Use the new elements with confidence.
-* Cross-browser compatible (Chrome, Opera, Safari, Firefox 3.6+, IE6+).
-* Designed with progressive enhancement in mind.
-* Includes [Normalize.css](http://necolas.github.com/normalize.css/) for CSS
-  normalizations and common bug fixes.
-* The latest [jQuery](http://jquery.com/) via CDN, with a local fallback.
-* The latest [Modernizr](http://modernizr.com/) build for feature detection.
-* IE-specific classes for easier cross-browser control.
-* Placeholder CSS Media Queries.
-* Useful CSS helpers.
-* Default print CSS, performance optimized.
-* Protection against any stray `console.log` causing JavaScript errors in
-  IE6/7.
-* An optimized Google Analytics snippet.
-* Apache server caching, compression, and other configuration defaults for
-  Grade-A performance.
-* Cross-domain Ajax and Flash.
-* "Delete-key friendly." Easy to strip out parts you don't need.
-* Extensive inline and accompanying documentation.
-
-
-## Documentation
-
-Take a look at the [documentation table of contents](doc/TOC.md). This
-documentation is bundled with the project, which makes it readily available for
-offline reading and provides a useful starting point for any documentation you
-want to write about your project.
-
+* jQuery
+* [Three.js](http://threejs.org)
+* [Howler](https://github.com/goldfire/howler.js) - for future audio
 
 ## Contributing
 
-Anyone and everyone is welcome to [contribute](CONTRIBUTING.md). Hundreds of
-developers have helped make the HTML5 Boilerplate what it is today.
+Anyone and everyone is welcome to contribute. I intend to make optimizations in the future, and your help would be greatly appreciated.

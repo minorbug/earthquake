@@ -25,33 +25,12 @@
     // Earth Model
     var CRUST_RADIUS = 6367,
         OUTER_CORE_RADIUS = 3600,
-        MARKER_SEGMENTS = 16,
         SEGMENTS = 32;
 
 
     // core material
     var noiseTexture = new THREE.ImageUtils.loadTexture( 'img/cloud.png' );
     noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
-
-    var lavaTexture = new THREE.ImageUtils.loadTexture( 'img/core.jpg' );
-    lavaTexture.wrapS = lavaTexture.wrapT = THREE.RepeatWrapping;
-
-    var customUniforms = {
-        baseTexture: 	{ type: "t", value: lavaTexture },
-        baseSpeed: 		{ type: "f", value: 0.005 },
-        noiseTexture: 	{ type: "t", value: noiseTexture },
-        noiseScale:		{ type: "f", value: 0.1337 },
-        alpha: 			{ type: "f", value: 1.0 },
-        time: 			{ type: "f", value: 1.0 }
-    };
-
-    var lavaShader = new THREE.ShaderMaterial(
-        {
-            uniforms: customUniforms,
-            vertexShader:   document.getElementById( 'vertexShader'   ).textContent,
-            fragmentShader: document.getElementById( 'fragmentShader' ).textContent
-        }
-    );
 
     // MagnitudeLUT (will round to nearest integer);
     var magnitudeRadii = [10, 12.5, 20, 37.5, 50, 72.5, 100, 132.5, 170, 212.5, 260];
@@ -71,10 +50,12 @@
     $(document).on('getEarthquakeData_success', function(event,data){
 
 
-         for (var i=0, l=data.earthquakes.length; i<l;i++){
+        for (var i=0, l=data.earthquakes.length; i<l;i++){
             var eq = data.earthquakes[i];
             addMarkerToCrust(crust,eq);
         }
+
+        onEarthquakeDataDrawSuccess();
     });
 
     document.addEventListener( 'mousedown', onDocumentMouseDown, false );
@@ -83,11 +64,11 @@
     window.addEventListener( 'resize', onWindowResize, false );
 
     var scene = new THREE.Scene(),
-        camera = new THREE.PerspectiveCamera(40, width / height, 1, 20000),
+        camera = new THREE.PerspectiveCamera(60, width / height, 1, 20000),
         cameraWorldPosition = new THREE.Vector3();
 
-    camera.position.y = -4100;
-    camera.position.x = 4100;
+    camera.position.y = 4100;
+    camera.position.x = -4100;
     camera.lookAt(new THREE.Vector3(CRUST_RADIUS,CRUST_RADIUS+200,0));
 
     // Camera grouped into empty object with center at 0,0,0 (for easier rotating)
@@ -110,23 +91,31 @@
     scene.add( light );
 
     var crust = createCrust(CRUST_RADIUS, SEGMENTS),
-        outerCore = createOuterCore(OUTER_CORE_RADIUS, SEGMENTS),
         markers = [];
 
-
-
     crust.setTexturesEdgeLongitude(-180.806168);
-    outerCore.rotation.x = 90;
-
 
     scene.add(crust);
-    //scene.add(outerCore);
-
-
     sceneElement.appendChild(renderer.domElement);
     animate();
 
-    GeoJSON.loadEarthquakeData('all','week');
+
+    $('#loadingoverlay h1, #loadingoverlay h2').fadeIn(2000, function(){
+        $('#loadingoverlay h3').fadeIn(500).jrumble({
+            x: 1,
+            y: 0,
+            rotation: 1
+        }).trigger('startRumble');
+        GeoJSON.loadEarthquakeData('all','day');
+    });
+
+
+
+
+    function onEarthquakeDataDrawSuccess(){
+        $('#loadingoverlay h3').trigger('stopRumble');
+        $('#loadingoverlay').fadeOut(2000);
+    }
 
     function render(){
 
@@ -149,8 +138,6 @@
     function animate() {
         requestAnimationFrame(animate);
         render();
-        var delta = clock.getDelta();
-        customUniforms.time.value += delta;
     }
 
     function addMarkerToCrust(crustModel,data){
@@ -209,13 +196,6 @@
         );
     }
 
-    function createOuterCore(radius, segments) {
-        console.log(customUniforms);
-        return new THREE.Mesh(
-            new THREE.SphereGeometry(radius, segments, segments),
-            lavaShader
-        );
-    }
 
     function checkSelectInfo(){
 

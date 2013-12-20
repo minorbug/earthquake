@@ -14,6 +14,7 @@
 
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
+        <link href='http://fonts.googleapis.com/css?family=Raleway+Dots|Raleway:400,800' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="css/earthquake.css">
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     </head>
@@ -21,9 +22,15 @@
         <!--[if lt IE 7]>
             <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
-        <div id="header" class="clearfix">
-            <div class="title">Earthquake</div>
-            <div class="options" id="debug"></div>
+        <div id="loadingoverlay">
+            <h1>Earthquake</h1>
+            <h2>Inspired by the "Earthquake" exhibit at the California Academy of Sciences</h2>
+            <h3>Getting latest earthquake data from USGS.gov...</h3>
+        </div>
+        <div id="header">
+            <h1>Earthquake</h1>
+            <h2>Inspired by the "Earthquake" exhibit at the California Academy of Sciences</h2>
+            <h3>Created by <a href="http://twitter.com/nerdmattbaker" target="_blank">@NerdMattBaker</a> • <a href="https://github.com/minorbug/earthquake" target="_blank">View on GitHub</a></h3>
         </div>
         <div id="detail">
             <div id="detail-location"></div>
@@ -37,43 +44,13 @@
 
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.2.min.js"><\/script>')</script>
+        <script type="text/javascript" src="js/jquery.jrumble.1.3.min.js"></script>
         <script src="js/Detector.js"></script>
         <script src="js/howler.js"></script>
         <script src="js/three.js"></script>
         <script src="js/three.geospatial.js"></script>
         <script src="js/geojson.js"></script>
-        <!-- ---------------- Custom Shader Code ------------------------ -->
-        <script id="vertexShader" type="x-shader/x-vertex">
-        varying vec2 vUv;
-        void main()
-        {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-        }
-        </script>
 
-                <!-- fragment shader a.k.a. pixel shader -->
-                <script id="fragmentShader" type="x-shader/x-vertex">
-        uniform sampler2D baseTexture;
-        uniform float baseSpeed;
-        uniform sampler2D noiseTexture;
-        uniform float noiseScale;
-        uniform float alpha;
-        uniform float time;
-
-        varying vec2 vUv;
-        void main()
-        {
-            vec2 uvTimeShift = vUv + vec2( -0.7, 1.5 ) * time * baseSpeed;
-            vec4 noiseGeneratorTimeShift = texture2D( noiseTexture, uvTimeShift );
-            vec2 uvNoiseTimeShift = vUv + noiseScale * vec2( noiseGeneratorTimeShift.r, noiseGeneratorTimeShift.b );
-            vec4 baseColor = texture2D( baseTexture, uvNoiseTimeShift );
-
-            baseColor.a = alpha;
-            gl_FragColor = baseColor;
-        }
-        </script>
-        <!-- ----------------------------------------------------------- -->
         <script src="js/main.js"></script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->

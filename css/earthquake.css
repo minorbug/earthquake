@@ -1,10 +1,80 @@
+body, html {
+    height: 100%;
+    font-family: 'Raleway', sans-serif;
+}
+a{
+    color:white;
+}
+
+#loadingoverlay{
+    background: #050b16; /* Old browsers */
+    background: -moz-linear-gradient(top, #050b16 80%, #aa0000 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(80%,#050b16), color-stop(100%,#aa0000)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top, #050b16 80%,#aa0000 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top, #050b16 80%,#aa0000 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top, #050b16 80%,#aa0000 100%); /* IE10+ */
+    background: linear-gradient(to bottom, #050b16 80%,#aa0000 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#050b16', endColorstr='#aa0000',GradientType=0 ); /* IE6-9 */
+    position:fixed;
+    width:100%;
+    height:100%;
+    top:0px;
+    left:0px;
+    z-index:1000;
+    text-transform: uppercase;
+    text-align:center;
+}
+
+h1 {
+    font-size:5em;
+    margin-top:200px;
+    margin-bottom:-20px;
+    padding-bottom:0px;
+    font-weight:800;
+    color:red;
+}
+
+#loadingoverlay h1{
+    display:none;
+}
+#loadingoverlay h2,#loadingoverlay h3{
+    font-size:0.8em;
+    margin:0px;
+    font-weight:100;
+    color:#fff;
+    display:none;
+}
+
+#loadingoverlay h3{
+    color:#7f8795;
+    text-transform: none;
+    margin-top:32px;
+}
+
 #header {
     color:white;
-    font-size:24px;
     font-weight:800;
     position:absolute;
-    top:5px;
-    left:5px;
+    bottom:20px;
+    left:20px;
+}
+
+
+#header h1,#header h2,#header h3{
+    margin:0px;
+    font-size:1em;
+    display:block;
+}
+
+
+#header h1 {
+    text-transform: uppercase;
+    font-size:1.3em;
+}
+
+#header h2{
+    font-size:0.7em;
+    font-weight:100;
 }
 
 #detail {
@@ -28,6 +98,7 @@
     font-size:14px;
     line-height: 14px;
     font-weight:100;
+    width:300px;
 }
 
 #detail .marker {
@@ -44,15 +115,15 @@
     top:5px;
     right:5px;
     font-size:24px;
+    line-height:16px;
     font-weight:800;
-    color:orange;
+    color:#fff;
     text-align: right;
 }
 
 #detail-magnitude h1,#detail-depth h1{
     font-size:10px;
     text-transform: uppercase;
-    line-height:10px;
     margin:0;
     padding:0;
 }
@@ -63,6 +134,6 @@
     right:5px;
     font-size:14px;
     font-weight:800;
-    color:red;
+    color:#fff;
     text-align: right;
 }
