@@ -9,9 +9,9 @@ Earthquake is a personal project that I decided to create to brush up on newer w
 
 ## Quick start
 
-Choose one of the following options:
+Using Google Chrome (I hope to optimize for other browsers as well):
 
-1. View the page at [http://mattbaker.me/earthquake](http://mattbaker.me/earthquake). This will show you all of the earthquakes measured in the past 24 hours by the USGS.
+1. View the page at [http://mattbaker.me/earthquake](http://mattbaker.me/earthquake). This will show you all of the major (magnitude 4.5+) earthquakes measured in the past month by the USGS.
 2. Use your mouse to move the camera around underneath the earth's crust (you can also use the "A" and "D" keys to rotate the camera if needed). Click on the quake markers to view depth and magnitude information.
 
 

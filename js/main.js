@@ -106,7 +106,7 @@
             y: 0,
             rotation: 1
         }).trigger('startRumble');
-        GeoJSON.loadEarthquakeData('all','day');
+        GeoJSON.loadEarthquakeData('4.5','month');
     });
 
 
