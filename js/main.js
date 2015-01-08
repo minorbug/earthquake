@@ -3,7 +3,6 @@
 
     if (!Detector.webgl) {
         Detector.addGetWebGLMessage(webglEl);
-        return;
     }
 
     var clock = new THREE.Clock();
