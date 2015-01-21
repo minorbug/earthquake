@@ -14,6 +14,7 @@ var GeoJSON = (function(){
                 crossDomain:true,
                 dataType: 'jsonp',
                 jsonp: false,
+                cache:true,
                 jsonpCallback: 'eqfeed_callback',
                 beforeSend: function(){
                     $(document).trigger('getEarthquakeData_start', { message: 'Getting data from USGS ('+url+')' });
