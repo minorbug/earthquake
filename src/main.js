@@ -1,11 +1,13 @@
 // src/main.js — entry. Wires scene, controls, feed, markers, tuning, detail.
 import { Clock } from 'three';
-import { createScene } from './scene.js';
+import { createScene, CRUST_RADIUS } from './scene.js';
 import { buildGui } from './tuning.js';
 import { loadEarthquakes, geoToVec3 } from './feed.js';
 import { createBlobMarker, updateUniforms, getAllMarkers } from './markers.js';
 import { attachControls } from './controls.js';
 import { showDetail, hideDetail } from './detail.js';
+import { buildAtlasGui } from './atlasTuning.js';
+import { loadAtlas } from './atlas.js';
 
 const probe = document.createElement('canvas');
 if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
@@ -16,6 +18,8 @@ if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
 const eqScene = document.getElementById('eqScene');
 const { scene, camera, camGroup, renderer, crust } = createScene(eqScene);
 buildGui();
+buildAtlasGui();
+loadAtlas({ scene, radius: CRUST_RADIUS });
 
 const loadingOverlay = document.getElementById('loadingoverlay');
 const clock = new Clock();
