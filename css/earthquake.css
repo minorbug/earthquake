@@ -1,3 +1,5 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
 body, html {
     height: 100%;
     font-family: 'Raleway', sans-serif;
@@ -83,13 +85,36 @@ h1 {
     bottom:0px;
     right:0px;
     width:400px;
-    height:100px;
+    height:140px;
     word-wrap: break-word;
-    background: black no-repeat top left;
+    background: black;
     color:white;
     -webkit-box-shadow: 0 0 30px 5px rgba(255,0,0,1);
     box-shadow: 0 0 30px 5px rgba(255,0,0,1);
+    overflow: hidden;
 }
+#detail-map {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: calc(100% + 80px); /* extra height pushes OSM attribution below the clip */
+    border: 0;
+    z-index: 0;
+    pointer-events: none;
+    filter: invert(1) hue-rotate(180deg) brightness(0.85);
+    -webkit-filter: invert(1) hue-rotate(180deg) brightness(0.85);
+}
+#detail-attrib {
+    position: absolute;
+    bottom: 2px;
+    left: 5px;
+    font-size: 9px;
+    line-height: 1;
+    color: rgba(255,255,255,0.35);
+    z-index: 2;
+    pointer-events: none;
+}
+#detail-location, #detail-magnitude, #detail-depth { z-index: 1; }
 
 #detail-location {
     position:absolute;

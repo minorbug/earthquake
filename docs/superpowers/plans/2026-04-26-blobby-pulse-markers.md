@@ -399,7 +399,7 @@ Inside the IIFE, **before** the final `window.Markers = ...` line, add:
                 phaseSeed: { type: 'f', value: phaseSeed },
                 deformAmp: { type: 'f', value: deform },
                 pulseHz:   { type: 'f', value: hz },
-                color:     { type: 'c', value: new THREE.Color(c.r, c.g, c.b) }
+                color:     { type: 'v3', value: new THREE.Vector3(c.r, c.g, c.b) }
             },
             vertexShader: blobVert,
             fragmentShader: blobFrag
@@ -415,7 +415,7 @@ Inside the IIFE, **before** the final `window.Markers = ...` line, add:
         var blobMat = makeBlobMaterial(data.magnitude, data.depth, phaseSeed);
         var blobGeo = new THREE.IcosahedronGeometry(1, 2);
         var blob = new THREE.Mesh(blobGeo, blobMat);
-        blob.scale.setScalar(radius);
+        blob.scale.set(radius, radius, radius);
         blob.userData = data;
         blob.userData._kind = 'blob';
         marker.add(blob);
@@ -444,11 +444,11 @@ Inside the IIFE, **before** the final `window.Markers = ...` line, add:
                 var data = m.userData;
                 var mNorm = Math.max(0, Math.min(1, (data.magnitude - 4.5) / 4.5));
                 var radius = lerp(window.tuning.radiusMin, window.tuning.radiusMax, mNorm);
-                blob.scale.setScalar(radius);
+                blob.scale.set(radius, radius, radius);
                 u.deformAmp.value = lerp(window.tuning.deformAmpMin, window.tuning.deformAmpMax, mNorm);
                 u.pulseHz.value   = lerp(window.tuning.pulseHzMin, window.tuning.pulseHzMax, mNorm);
                 var c = colorForDepth(data.depth);
-                u.color.value.setRGB(c.r, c.g, c.b);
+                u.color.value.set(c.r, c.g, c.b);
             }
         }
     }
@@ -584,7 +584,7 @@ After `makeBlobMaterial`, add:
                 alphaExp:         { type: 'f', value: window.tuning.alphaExp },
                 thicknessFrac:    { type: 'f', value: window.tuning.thicknessFrac },
                 thicknessFalloff: { type: 'f', value: window.tuning.thicknessFalloff },
-                color:            { type: 'c', value: new THREE.Color(c.r, c.g, c.b) }
+                color:            { type: 'v3', value: new THREE.Vector3(c.r, c.g, c.b) }
             },
             vertexShader: ringVert,
             fragmentShader: ringFrag,
@@ -614,7 +614,7 @@ After `makeBlobMaterial`, add:
             // Plane disk geometry, unit-radius (scaled by mesh scale)
             var geo = new THREE.PlaneGeometry(2, 2, 1, 1); // -1..1 in x and y; uv 0..1
             var ring = new THREE.Mesh(geo, mat);
-            ring.scale.setScalar(maxRadius);
+            ring.scale.set(maxRadius, maxRadius, maxRadius);
             ring.userData._kind = 'ring';
             marker.add(ring);
             rings.push(ring);
@@ -652,10 +652,10 @@ Inside the `for (var i = 0; ... allMarkers.length; ...)` loop in `updateMarkerUn
                     ru.alphaExp.value         = window.tuning.alphaExp;
                     ru.thicknessFrac.value    = window.tuning.thicknessFrac;
                     ru.thicknessFalloff.value = window.tuning.thicknessFalloff;
-                    ru.color.value.setRGB(c2.r, c2.g, c2.b);
+                    ru.color.value.set(c2.r, c2.g, c2.b);
                     // phaseOffset depends on index + cycleSec, refresh in case cycleSec changed
                     ru.phaseOffset.value = (window.tuning.cycleSec * k) / rings.length;
-                    ring.scale.setScalar(maxR);
+                    ring.scale.set(maxR, maxR, maxR);
                 }
             }
 ```

@@ -27,14 +27,6 @@
         SEGMENTS = 32;
 
 
-    // core material
-    var noiseTexture = new THREE.ImageUtils.loadTexture( 'img/cloud.png' );
-    noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
-
-    // MagnitudeLUT (will round to nearest integer);
-    var magnitudeRadii = [10, 12.5, 20, 37.5, 50, 72.5, 100, 132.5, 170, 212.5, 260];
-
-
     // Touch and click rotation tracking
     var targetRotationX = 0,
         targetRotationY = 0,
@@ -123,6 +115,7 @@
         camGroup.rotation.y += ( targetCameraRotationY - camGroup.rotation.y ) * 0.15;
 
         scene.updateMatrixWorld();
+        Markers.updateMarkerUniforms(clock.getElapsedTime());
 
         cameraWorldPosition.setFromMatrixPosition( camera.matrixWorld );
 
@@ -141,7 +134,7 @@
 
     function addMarkerToCrust(crustModel,data){
 
-        var marker = createMarker(data);
+        var marker = Markers.createBlobMarker(data);
         markers.push(marker);
 
         crustModel.addGeoSymbol(
@@ -153,44 +146,20 @@
         );
     }
 
-    function createMarker(data){
-
-        var marker = new THREE.Object3D(),
-            magnitude = data.magnitude,
-            spriteSize = 10*magnitudeRadii[Math.round(magnitude)],
-            markerOpacity = (magnitude/10);
-        var spriteMaterial = new THREE.SpriteMaterial(
-            {
-                map: new THREE.ImageUtils.loadTexture( 'img/spark.png' ),
-                useScreenCoordinates: false, alignment: new THREE.Vector2( 0, 0 ),
-                color: 0xffffff, transparent: true, opacity:markerOpacity, blending: THREE.NormalBlending
-            });
-        var sprite = new THREE.Sprite( spriteMaterial );
-        sprite.scale.set(spriteSize, spriteSize,spriteSize);
-        marker.add(sprite); // this centers the glow at the mesh
-
-        marker.add(new THREE.Mesh(
-            new THREE.SphereGeometry(magnitudeRadii[Math.round(magnitude)], 4, 4),
-            new THREE.MeshLambertMaterial( { visible:true, color: 0xffa500 } )
-        ));
-
-        // Add earthquake data to marker
-        marker.userData = data;
-
-        return marker;
-
-    }
-
     function createCrust(radius, segments) {
+        var worldTex = THREE.ImageUtils.loadTexture('img/world.jpg');
+        worldTex.wrapS = worldTex.wrapT = THREE.ClampToEdgeWrapping;
+        worldTex.minFilter = THREE.LinearFilter;
+        worldTex.generateMipmaps = false;
         return new THREE.GeoSpatialMap(
             new THREE.SphereGeometry(radius, segments, segments),
             new THREE.MeshPhongMaterial({
-                map:  THREE.ImageUtils.loadTexture('img/world.jpg'),
+                map: worldTex,
                 side: THREE.DoubleSide,
                 shading: THREE.SmoothShading,
                 shininess: 100,
-                ambient: 0x000000,
-                specular:    new THREE.Color('black')
+                ambient: 0xffffff,
+                specular: new THREE.Color('black')
             })
         );
     }
@@ -208,12 +177,12 @@
             intersectFound = false;
 
         intersects = raycaster.intersectObjects( markers,true );
-        console.log (intersects);
         for(var i= 0, l=intersects.length;i<l;i++){
-            if (intersects[i].object instanceof THREE.Sprite){
+            var hit = intersects[i].object;
+            if (hit instanceof THREE.Mesh && hit.userData && hit.userData._kind === 'blob'){
                 intersectFound = true;
                 $("#detail").fadeOut(500, function(){
-                    onMarkerSelect(intersects[ i ].object.parent);
+                    onMarkerSelect(hit.parent);
                 });
                 break;
             }
@@ -222,25 +191,26 @@
 
     }
 
-    function onMarkerSelect(intersect){
+    function osmEmbedUrl(lat, lng) {
+        var d = 4; // bbox half-width in degrees (~regional view)
+        var bbox = [lng - d * 2, lat - d, lng + d * 2, lat + d].join(',');
+        return 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lng;
+    }
 
-        var mapImageUrl = "http://maps.googleapis.com/maps/api/staticmap?center=###&zoom=2&format=png&sensor=false&size=400x100&maptype=roadmap&visual_refresh=true&style=feature:water|element:geometry.fill|color:0x000000|visibility:on&style=element:labels.text|visibility:off&style=feature:administrative|visibility:off&style=feature:landscape|visibility:on|color:0x1b264c&style=feature:transit|visibility:off&style=feature:poi|visibility:off";
+    function onMarkerSelect(intersect){
 
         crust.traverse(function(o){
             var mesh = o.children[1];       //    Should be the Mesh
             if (o.id === intersect.id){
-                console.log(mesh);
-
                 $("#detail-location").html(o.userData.title);
                 $("#detail-magnitude").html("<h1>Magnitude</h1>"+o.userData.magnitude);
                 $("#detail-depth").html("<h1>Depth</h1>"+Math.round(o.userData.depth*0.621371)+" miles");
-                $("#detail").css(
-                    'background-image', 'url('+mapImageUrl.replace("###", o.userData.lat+","+ o.userData.lng)+')'
-                ).fadeIn();
+                $("#detail-map").attr('src', osmEmbedUrl(o.userData.lat, o.userData.lng));
+                $("#detail").fadeIn();
 
-                mesh.material.color.setHex(0xffffff);
+                if (mesh && mesh.material && mesh.material.color) mesh.material.color.setHex(0xffffff);
             } else {
-               if (mesh && mesh instanceof THREE.Mesh) mesh.material.color.setHex(0xffa500);
+               if (mesh && mesh instanceof THREE.Mesh && mesh.material && mesh.material.color) mesh.material.color.setHex(0xffa500);
             }
         });
 
