@@ -4,9 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "bun run dev.js",
-    "build": "rm -rf dist && bun build ./index.html --outdir=dist --minify && cp -R img dist/img"
+    "build": "rm -rf dist && bun build ./index.html --outdir=dist --minify && cp -R img dist/img",
+    "prep-data": "bun run scripts/prep-atlas-data.js"
   },
   "dependencies": {
+    "earcut": "^3.0.2",
     "lil-gui": "^0.21.0",
     "three": "^0.184.0"
   },
