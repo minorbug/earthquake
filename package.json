@@ -1,0 +1,16 @@
+{
+  "name": "earthquake",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run dev.js",
+    "build": "rm -rf dist && bun build ./index.html --outdir=dist --minify && cp -R img dist/img"
+  },
+  "dependencies": {
+    "lil-gui": "^0.21.0",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.184.0"
+  }
+}

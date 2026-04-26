@@ -80,7 +80,6 @@ h1 {
 }
 
 #detail {
-    display:none;
     position:absolute;
     bottom:0px;
     right:0px;
@@ -162,3 +161,19 @@ h1 {
     color:#fff;
     text-align: right;
 }
+
+/* ===== Animation/visibility classes (replaces jQuery fade + jrumble) ===== */
+
+@keyframes rumble {
+    0%, 100% { transform: translate(0, 0) rotate(0); }
+    25%      { transform: translate(1px, 0) rotate(0.5deg); }
+    50%      { transform: translate(-1px, 0) rotate(-0.5deg); }
+    75%      { transform: translate(0, 0) rotate(0.5deg); }
+}
+.rumble { animation: rumble 0.15s linear infinite; }
+
+#loadingoverlay { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+#loadingoverlay.show { opacity: 1; pointer-events: auto; }
+
+#detail { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; display: block; }
+#detail.show { opacity: 1; pointer-events: auto; }
