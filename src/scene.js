@@ -1,4 +1,4 @@
-// src/scene.js — Scene, Camera, Renderer, crust globe.
+// src/scene.js — Scene, Camera, Renderer, plain-color crust globe.
 import {
     Scene,
     PerspectiveCamera,
@@ -7,12 +7,10 @@ import {
     SphereGeometry,
     MeshBasicMaterial,
     Mesh,
-    TextureLoader,
-    ClampToEdgeWrapping,
-    LinearFilter,
     DoubleSide,
-    SRGBColorSpace,
+    Color,
 } from 'three';
+import { atlasTuning, onAtlasColorChange } from './atlasTuning.js';
 
 export const CRUST_RADIUS = 6367;
 
@@ -31,17 +29,13 @@ export function createScene(container) {
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
-    const tex = new TextureLoader().load('./img/world.jpg');
-    tex.colorSpace = SRGBColorSpace;
-    tex.wrapS = tex.wrapT = ClampToEdgeWrapping;
-    tex.minFilter = LinearFilter;
-    tex.generateMipmaps = false;
-
-    const crust = new Mesh(
-        new SphereGeometry(CRUST_RADIUS, 32, 32),
-        new MeshBasicMaterial({ map: tex, side: DoubleSide }),
-    );
+    const crustMat = new MeshBasicMaterial({ color: new Color(atlasTuning.oceanColor), side: DoubleSide });
+    const crust = new Mesh(new SphereGeometry(CRUST_RADIUS, 32, 32), crustMat);
     scene.add(crust);
+
+    onAtlasColorChange((t) => {
+        crustMat.color.set(t.oceanColor);
+    });
 
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
