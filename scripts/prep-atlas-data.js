@@ -13,7 +13,7 @@ import { resolve } from 'node:path';
 const SOURCES = {
     land:      'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson',
     countries: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson',
-    boundaries:'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json',
+    boundaries:'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_steps.json',
 };
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -81,14 +81,27 @@ const landFiltered = {
 };
 writeFileSync(resolve('data/ne_110m_land.geojson'), JSON.stringify(landFiltered));
 
-// PB2002 boundaries: pass through, round coords
+// PB2002 boundary STEPS: each feature is a small (~30km) LineString segment
+// with a STEPCLASS code (OSR/OTF/OCB/CTF/CCB/SUB/CRB). At globe rendering
+// scale, the interior curve detail is irrelevant — we keep just the segment
+// endpoints. Adjacent steps share endpoints so the visual line stays continuous.
 const boundariesRounded = {
     type: 'FeatureCollection',
-    features: boundaries.features.map((f) => ({
-        type: 'Feature',
-        properties: f.properties,
-        geometry: roundGeometry(f.geometry),
-    })),
+    features: boundaries.features
+        .map((f) => {
+            const c = f.geometry.coordinates;
+            const start = [round2(c[0][0]), round2(c[0][1])];
+            const end   = [round2(c[c.length - 1][0]), round2(c[c.length - 1][1])];
+            return {
+                type: 'Feature',
+                properties: { Type: f.properties.STEPCLASS || '' },
+                geometry: { type: 'LineString', coordinates: [start, end] },
+            };
+        })
+        .filter((f) => {
+            const [a, b] = f.geometry.coordinates;
+            return a[0] !== b[0] || a[1] !== b[1];
+        }),
 };
 writeFileSync(resolve('data/pb2002_boundaries.geojson'), JSON.stringify(boundariesRounded));
 
