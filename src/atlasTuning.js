@@ -6,8 +6,8 @@ const STORAGE_KEY = 'eq-atlas-tuning';
 const defaults = {
     // Colors
     oceanColor:      '#0a1428',
-    landColor:       '#1a2238',
-    antarcticaColor: '#2a3548',
+    landColor:       '#2c4870',
+    antarcticaColor: '#7a90b0',
     ridgeColor:      '#d840ff', // OSR, CRB
     subColor:        '#6020c0', // OCB, CCB, SUB
     transformColor:  '#f0c060', // OTF, CTF

@@ -28,7 +28,9 @@ import boundariesJson from '../data/pb2002_boundaries.geojson' with { type: 'jso
 
 // Must match feed.js's geoToVec3 internal constant.
 const TEXTURE_EDGE_LNG = -180.806168;
-const BOUNDARY_RADIUS_FACTOR = 1.001;
+// Camera sits inside the crust sphere. Boundaries need to be slightly INSIDE
+// the crust radius to render between camera and the crust's inner surface.
+const BOUNDARY_RADIUS_FACTOR = 0.999;
 const MASK_WIDTH = 4096;
 const MASK_HEIGHT = 2048;
 
