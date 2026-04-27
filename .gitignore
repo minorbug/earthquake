@@ -3,3 +3,6 @@
 .superpowers/
 node_modules/
 dist/
+
+# Unrelated nested iOS Xcode project sitting in this repo
+Quakes/
