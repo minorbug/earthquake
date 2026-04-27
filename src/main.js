@@ -16,10 +16,10 @@ if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
 }
 
 const eqScene = document.getElementById('eqScene');
-const { scene, camera, camGroup, renderer, crust } = createScene(eqScene);
+const { scene, camera, camGroup, renderer } = createScene(eqScene);
 buildGui();
 buildAtlasGui();
-loadAtlas({ scene, radius: CRUST_RADIUS });
+const { crust } = loadAtlas({ scene, radius: CRUST_RADIUS });
 
 const loadingOverlay = document.getElementById('loadingoverlay');
 const clock = new Clock();
