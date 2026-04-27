@@ -19,7 +19,7 @@ export function createScene(container) {
     camGroup.add(camera);
     scene.add(camGroup);
 
-    const renderer = new WebGLRenderer({ antialias: true });
+    const renderer = new WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 

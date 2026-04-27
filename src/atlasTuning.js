@@ -6,8 +6,10 @@ const STORAGE_KEY = 'eq-atlas-tuning';
 const defaults = {
     // Colors
     oceanColor:      '#0a1428',
-    landColor:       '#2c4870',
-    antarcticaColor: '#7a90b0',
+    landColor:       '#3e5d8a',
+    antarcticaColor: '#9aa8c5',
+    magmaColor:      '#ff3008',
+    magmaIntensity:  0.35,
     ridgeColor:      '#d840ff', // OSR, CRB
     subColor:        '#6020c0', // OCB, CCB, SUB
     transformColor:  '#f0c060', // OTF, CTF
@@ -65,6 +67,10 @@ export function buildAtlasGui() {
     bindColor(fColors.addColor(atlasTuning, 'transformColor'));
     bindColor(fColors.addColor(atlasTuning, 'otherColor'));
     bindColor(fColors.add(atlasTuning, 'otherAlpha', 0, 1, 0.01));
+
+    const fMagma = gui.addFolder('Magma glow');
+    bindColor(fMagma.addColor(atlasTuning, 'magmaColor'));
+    bindColor(fMagma.add(atlasTuning, 'magmaIntensity', 0, 2, 0.01));
 
     const fGeom = gui.addFolder('Geometry');
     bindColor(fGeom.add(atlasTuning, 'boundaryWidth', 0, 3, 0.05));

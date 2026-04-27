@@ -104,26 +104,30 @@ function buildLineGeometry(features, radiusKm) {
     return geo;
 }
 
-// ---- Crust shader: samples mask, branches color ----
+// ---- Crust shader: samples mask, branches color, adds magma rim glow ----
 const crustVert = /* glsl */`
     varying vec3 vN;
+    varying vec3 vWorldPos;
     void main() {
         vN = normalize(position);
+        vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
 `;
 
-// Inverse of geoToVec3:
-//   forward: theta_deg = 180 - (lng - TEX_EDGE)  →  lng = 180 - theta_deg + TEX_EDGE
-//   canvas u = (lng - TEX_EDGE) / 360 = (180 - theta_deg) / 360
-// where theta_deg = degrees(atan2(z, x)) ∈ [-180, 180]
+// Magma glow: when the surface normal is grazing the camera (limb of the
+// visible portion of the inner sphere), the inner "molten core" bleeds
+// through. Rim term = (1 - |dot(normal, view)|)^2.
 const crustFrag = /* glsl */`
     precision highp float;
     uniform sampler2D mask;
     uniform vec3 oceanColor;
     uniform vec3 landColor;
     uniform vec3 antarcticaColor;
+    uniform vec3 magmaColor;
+    uniform float magmaIntensity;
     varying vec3 vN;
+    varying vec3 vWorldPos;
 
     void main() {
         float thetaDeg = degrees(atan(vN.z, vN.x));
@@ -134,9 +138,16 @@ const crustFrag = /* glsl */`
         float v = (90.0 - lat) / 180.0;
 
         float cat = texture2D(mask, vec2(u, v)).r;
-        vec3 color = oceanColor;
-        if (cat > 0.55) color = antarcticaColor;
-        else if (cat > 0.20) color = landColor;
+        vec3 base = oceanColor;
+        if (cat > 0.55) base = antarcticaColor;
+        else if (cat > 0.20) base = landColor;
+
+        vec3 worldNormal = normalize(vWorldPos);  // sphere at origin
+        vec3 viewDir = normalize(cameraPosition - vWorldPos);
+        float ndv = abs(dot(worldNormal, viewDir));
+        float rim = pow(1.0 - ndv, 2.0);
+
+        vec3 color = base + magmaColor * rim * magmaIntensity;
         gl_FragColor = vec4(color, 1.0);
     }
 `;
@@ -157,6 +168,8 @@ export function loadAtlas({ scene, radius }) {
             oceanColor:      { value: new Color(atlasTuning.oceanColor) },
             landColor:       { value: new Color(atlasTuning.showLand ? atlasTuning.landColor : atlasTuning.oceanColor) },
             antarcticaColor: { value: new Color(atlasTuning.showLand ? atlasTuning.antarcticaColor : atlasTuning.oceanColor) },
+            magmaColor:      { value: new Color(atlasTuning.magmaColor) },
+            magmaIntensity:  { value: atlasTuning.magmaIntensity },
         },
         vertexShader: crustVert,
         fragmentShader: crustFrag,
@@ -211,6 +224,8 @@ export function loadAtlas({ scene, radius }) {
             crustMat.uniforms.landColor.value.set(t.oceanColor);
             crustMat.uniforms.antarcticaColor.value.set(t.oceanColor);
         }
+        crustMat.uniforms.magmaColor.value.set(t.magmaColor);
+        crustMat.uniforms.magmaIntensity.value = t.magmaIntensity;
         for (const g of boundaryGroups) {
             g.material.color.set(t[g.colorKey]);
             const baseAlpha = g.isOther ? t.otherAlpha : 1.0;
