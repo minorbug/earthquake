@@ -64,9 +64,11 @@ function rasterizeMask(width, height) {
                     const ring = polygon[r];
                     for (let i = 0; i < ring.length; i++) {
                         const [lng, lat] = ring[i];
-                        let u = (lng - TEXTURE_EDGE_LNG) / 360;
-                        u = ((u % 1) + 1) % 1;       // wrap to [0, 1)
-                        const x = u * width;
+                        // No wrap: lng=180 and lng=-180 must map to DIFFERENT canvas
+                        // x values so polygons with explicit antimeridian/pole bridges
+                        // (e.g. Antarctica's (180,-90)→(-180,-90) edge) form a proper
+                        // bottom-of-canvas bridge instead of a zero-length collapse.
+                        const x = ((lng - TEXTURE_EDGE_LNG) / 360) * width;
                         const y = ((90 - lat) / 180) * height;
                         if (i === 0) ctx.moveTo(x, y);
                         else ctx.lineTo(x, y);
@@ -218,6 +220,9 @@ export function loadAtlas({ scene, radius }) {
         applyColors(t); // showLand affects land/antarctica uniform colors
         for (const g of boundaryGroups) g.mesh.visible = t.showBoundaries;
     });
+
+    // Diagnostic hook for headless inspection.
+    if (typeof window !== 'undefined') window.__eqAtlasMaskCanvas = maskCanvas;
 
     return { crust, boundaryGroups, maskCanvas, maskTexture: maskTex };
 }
