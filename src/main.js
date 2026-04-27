@@ -54,3 +54,7 @@ function animate() {
     renderer.render(scene, camera);
 }
 animate();
+
+if (typeof window !== 'undefined') {
+    window.__eqDebug = { scene, camera, camGroup, geoToVec3 };
+}

@@ -158,6 +158,10 @@ export function loadAtlas({ scene, radius }) {
     // Crust: rasterized mask + shader
     const maskCanvas = rasterizeMask(MASK_WIDTH, MASK_HEIGHT);
     const maskTex = new CanvasTexture(maskCanvas);
+    // CanvasTexture defaults flipY=true. Our shader's v formula
+    // (v = (90 - lat)/180) and canvas drawing (y = (90 - lat)/180 * h)
+    // already share orientation — flipping would invert N/S.
+    maskTex.flipY = false;
     maskTex.minFilter = LinearFilter;
     maskTex.magFilter = LinearFilter;
     maskTex.generateMipmaps = false;
