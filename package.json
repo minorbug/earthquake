@@ -13,6 +13,7 @@
     "three": "^0.184.0"
   },
   "devDependencies": {
-    "@types/three": "^0.184.0"
+    "@types/three": "^0.184.0",
+    "playwright": "^1.59.1"
   }
 }
