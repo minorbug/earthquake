@@ -1,6 +1,6 @@
 # Plate Motion Vectors — Design
 
-**Status:** approved 2026-04-27. Not yet implemented; planning next.
+**Status:** landed on `feat/plate-motion`.
 
 ## Problem
 
