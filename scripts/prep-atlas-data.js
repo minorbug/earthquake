@@ -107,7 +107,10 @@ writeFileSync(resolve('data/pb2002_boundaries.geojson'), JSON.stringify(boundari
 
 // Same step segments but with PlateA/PlateB preserved, for plateMotion.js.
 // Source has plate pairs as PLATEBOUND (e.g. "AF-AN", "AU/PA", "AN\SA");
-// split on any separator to get the two plate codes.
+// split on any separator to get the two plate codes. The separator itself
+// carries meaning: '/' and '\' mark subduction zones (direction = overriding
+// plate), '-' marks symmetric boundaries (ridges, transforms, etc.).
+let emptyPlateCount = 0;
 const stepsWithPlates = {
     type: 'FeatureCollection',
     features: boundaries.features
@@ -116,13 +119,22 @@ const stepsWithPlates = {
             const start = [round2(c[0][0]), round2(c[0][1])];
             const end   = [round2(c[c.length - 1][0]), round2(c[c.length - 1][1])];
             const p = f.properties;
-            const parts = (p.PLATEBOUND || '').split(/[-/\\]/);
+            const pb = p.PLATEBOUND || '';
+            // Detect separator before splitting so the signal is preserved.
+            let subduction = null;
+            if (pb.includes('/'))       subduction = '/';
+            else if (pb.includes('\\')) subduction = '\\';
+            const parts = pb.split(/[-/\\]/);
+            const plateA = parts[0] || '';
+            const plateB = parts[1] || '';
+            if (!plateA || !plateB) emptyPlateCount++;
             return {
                 type: 'Feature',
                 properties: {
                     Type: p.STEPCLASS || '',
-                    PlateA: parts[0] || '',
-                    PlateB: parts[1] || '',
+                    PlateA: plateA,
+                    PlateB: plateB,
+                    Subduction: subduction,
                 },
                 geometry: { type: 'LineString', coordinates: [start, end] },
             };
@@ -132,6 +144,11 @@ const stepsWithPlates = {
             return a[0] !== b[0] || a[1] !== b[1];
         }),
 };
+if (emptyPlateCount > 0) {
+    console.warn(`  WARNING: ${emptyPlateCount} segment(s) had empty PlateA or PlateB after split — check source schema.`);
+} else {
+    console.log('  Empty-plate segments: 0 (ok)');
+}
 writeFileSync(resolve('data/pb2002_steps_with_plates.geojson'), JSON.stringify(stepsWithPlates));
 
 console.log('Wrote 4 files to data/.');
