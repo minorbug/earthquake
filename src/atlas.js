@@ -24,7 +24,7 @@ import { geoToVec3 } from './feed.js';
 import { atlasTuning, onAtlasColorChange, onAtlasVisibilityChange } from './atlasTuning.js';
 import landJson from '../data/ne_110m_land.geojson' with { type: 'json' };
 import antarcticaJson from '../data/ne_110m_antarctica.geojson' with { type: 'json' };
-import boundariesJson from '../data/pb2002_boundaries.geojson' with { type: 'json' };
+import boundariesJson from '../data/pb2002_steps_with_plates.geojson' with { type: 'json' };
 
 // Must match feed.js's geoToVec3 internal constant.
 const TEXTURE_EDGE_LNG = -180.806168;
@@ -226,7 +226,7 @@ export function loadAtlas({ scene, radius }) {
         const lines = new LineSegments(geo, mat);
         lines.renderOrder = 2;
         scene.add(lines);
-        boundaryGroups.push({ key: g.key, colorKey: g.colorKey, alphaMult: g.alphaMult, material: mat, mesh: lines });
+        boundaryGroups.push({ key: g.key, colorKey: g.colorKey, alphaMult: g.alphaMult, material: mat, mesh: lines, features: groupedFeatures[g.key] });
     }
     const otherGeo = buildLineGeometry(otherFeatures, boundaryRadius);
     const otherMat = new LineBasicMaterial({
@@ -237,7 +237,7 @@ export function loadAtlas({ scene, radius }) {
     const otherLines = new LineSegments(otherGeo, otherMat);
     otherLines.renderOrder = 2;
     scene.add(otherLines);
-    boundaryGroups.push({ key: 'other', colorKey: 'otherColor', alphaMult: 1.0, material: otherMat, mesh: otherLines, isOther: true });
+    boundaryGroups.push({ key: 'other', colorKey: 'otherColor', alphaMult: 1.0, material: otherMat, mesh: otherLines, isOther: true, features: otherFeatures });
 
     // Live tuning
     function applyColors(t) {

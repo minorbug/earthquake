@@ -215,6 +215,51 @@ export function loadPlateMotion({ scene, radius, atlas }) {
         flowMaterials.push(newMat);
     }
 
+    // Helper: surface tangent at a lat/lng (used to determine flow direction sign).
+    function tangentAt(lat1, lng1, lat2, lng2) {
+        const DEG_LOCAL = Math.PI / 180;
+        const a = {
+            x: Math.cos(lat1 * DEG_LOCAL) * Math.cos(lng1 * DEG_LOCAL),
+            y: Math.sin(lat1 * DEG_LOCAL),
+            z: Math.cos(lat1 * DEG_LOCAL) * Math.sin(lng1 * DEG_LOCAL),
+        };
+        const b = {
+            x: Math.cos(lat2 * DEG_LOCAL) * Math.cos(lng2 * DEG_LOCAL),
+            y: Math.sin(lat2 * DEG_LOCAL),
+            z: Math.cos(lat2 * DEG_LOCAL) * Math.sin(lng2 * DEG_LOCAL),
+        };
+        return { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z };
+    }
+
+    function annotateGroupFlow(grp) {
+        const geo = grp.mesh.geometry;
+        const speeds = geo.getAttribute('aSpeed');
+        const signs  = geo.getAttribute('aSign');
+        const features = grp.features || [];
+        for (let f = 0; f < features.length; f++) {
+            const props = features[f].properties;
+            const [[lngA, latA], [lngB, latB]] = features[f].geometry.coordinates;
+            const midLat = (latA + latB) / 2;
+            const midLng = (lngA + lngB) / 2;
+            const v = velocityAt(poleIndex, props.PlateA, props.PlateB, midLat, midLng);
+            const speed = v ? Math.sqrt(Math.max(0, v.magnitude) / MAG_CEILING_MM_YR) : 0;
+            const tan = tangentAt(latA, lngA, latB, lngB);
+            // Sign: +1 if velocity dot tangent > 0, else -1. Falls back to +1.
+            let sign = 1;
+            if (v) {
+                const dot = v.direction.x*tan.x + v.direction.y*tan.y + v.direction.z*tan.z;
+                sign = dot >= 0 ? 1 : -1;
+            }
+            const i0 = f * 2, i1 = f * 2 + 1;
+            speeds.setX(i0, speed); speeds.setX(i1, speed);
+            signs.setX(i0,  sign);  signs.setX(i1,  sign);
+        }
+        speeds.needsUpdate = true;
+        signs.needsUpdate  = true;
+    }
+
+    for (const grp of atlas.boundaryGroups) annotateGroupFlow(grp);
+
     function update(t) {
         for (const m of flowMaterials) m.uniforms.uTime.value = t;
     }
