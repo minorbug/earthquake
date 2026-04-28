@@ -231,9 +231,9 @@ const raymarchFrag = /* glsl */`
             float heatT = clamp(dye * profile, 0.0, 1.0);
             vec3 col = mix(coolColor, hotColor, heatT);
 
-            float alpha = density * stepSize * 0.0018;
-            alpha = clamp(alpha, 0.0, 0.65);
-            accumColor += (1.0 - accumA) * col * alpha * 22.0;
+            float alpha = density * stepSize * 0.004;
+            alpha = clamp(alpha, 0.0, 0.7);
+            accumColor += (1.0 - accumA) * col * alpha * 30.0;
             accumA    += (1.0 - accumA) * alpha;
             if (accumA > 0.97) break;
         }
@@ -289,8 +289,8 @@ class StamFluid2D {
                 velocity:       { value: null },
                 dye:            { value: null },
                 dt:             { value: 0.05 },
-                decay:          { value: 0.3 },
-                injectStrength: { value: 24.0 },
+                decay:          { value: 0.32 },
+                injectStrength: { value: 22.0 },
                 hotspotRadius:  { value: 0.04 },
                 hotspots:       { value: Array.from({ length: MAX_HOTSPOTS }, () => new Vector3()) },
                 res:            { value: new Vector2(w, h) },
@@ -368,17 +368,18 @@ export function loadCoreVolFluid({ scene, renderer }) {
     let lastT = 0;
     let pendingDt = 0;
     const cfg = {
-        spawnRate: 4.0,
-        intensityRange: [0.55, 1.0],
-        lifetimeRange: [1.4, 2.6],
+        spawnRate: 3.2,
+        intensityRange: [0.6, 1.0],
+        lifetimeRange: [1.3, 2.4],
     };
 
     function spawnHotspot() {
-        const u_ = Math.random();
-        // Uniform-on-sphere except clipped near the poles (singular in
-        // equirectangular). Plumes appear over the whole orb; buoyancy
-        // still pushes them all toward the north pole over their lifetime.
-        const cosTheta = 0.85 - 1.7 * Math.random();
+        // Bias longitude toward the camera-facing hemisphere (u ≈ 0.5 is
+        // +X; default camera looks roughly +X) so plumes spawn where they're
+        // visible rather than wasted on the far side. Uniform-on-sphere v
+        // away from the poles.
+        const u_ = 0.25 + 0.5 * Math.random();
+        const cosTheta = 0.7 - 1.4 * Math.random();
         const v_ = Math.acos(cosTheta) / Math.PI;
         hotspots.push({
             u: u_,
@@ -441,6 +442,29 @@ export function loadCoreVolFluid({ scene, renderer }) {
     onAtlasVisibilityChange((tn) => {
         mesh.visible = tn.coreEnabled;
     });
+
+    // Pre-warm: spin the sim with a few hot spots so the page loads with
+    // established plumes rather than a quiet first second.
+    for (let i = 0; i < 5; i++) spawnHotspot();
+    for (let warm = 0; warm < 60; warm++) {
+        for (let i = 0; i < MAX_HOTSPOTS; i++) {
+            const hs = hotspots[i];
+            if (hs) {
+                hs.age += 0.04;
+                const tn = Math.min(hs.age / hs.lifetime, 1.0);
+                hotspotUniformArr[i].set(hs.u, hs.v, hs.intensity * Math.sin(tn * Math.PI));
+            } else {
+                hotspotUniformArr[i].set(0, 0, 0);
+            }
+        }
+        fluid.step(0.04, hotspotUniformArr);
+        // Drop expired and occasionally spawn during pre-warm too.
+        for (let i = hotspots.length - 1; i >= 0; i--) {
+            if (hotspots[i].age > hotspots[i].lifetime) hotspots.splice(i, 1);
+        }
+        if (warm % 12 === 0 && hotspots.length < MAX_HOTSPOTS) spawnHotspot();
+    }
+    mat.uniforms.dyeMap.value = fluid.getDyeTexture();
 
     if (typeof window !== 'undefined') {
         window.__eqVolDebug = {
