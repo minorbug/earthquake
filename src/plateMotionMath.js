@@ -84,9 +84,16 @@ function slerpLatLng(lat1, lng1, lat2, lng2, t) {
     const x = a.x * k1 + b.x * k2;
     const y = a.y * k1 + b.y * k2;
     const z = a.z * k1 + b.z * k2;
+    // Inverse of latLngToXyz's feed-convention forward map:
+    //   y = cos((90-lat)*DEG) = sin(lat) → lat = asin(y)
+    //   atan2(z, x) = theta = (180 - (lng - TEXTURE_EDGE_LNG))*DEG
+    //     → lng = 180 + TEXTURE_EDGE_LNG - atan2(z, x)/DEG
+    // Without this longitude correction, slerp's lat/lng output was
+    // approximately lng-reflected from the input, putting arrow positions
+    // at the antipode of the boundary lines they should sit on.
     return {
         lat: Math.asin(Math.min(1, Math.max(-1, y))) / DEG,
-        lng: Math.atan2(z, x) / DEG,
+        lng: 180 + TEXTURE_EDGE_LNG - Math.atan2(z, x) / DEG,
     };
 }
 
