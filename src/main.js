@@ -6,8 +6,10 @@ import { loadEarthquakes, geoToVec3 } from './feed.js';
 import { createBlobMarker, updateUniforms, getAllMarkers } from './markers.js';
 import { attachControls } from './controls.js';
 import { showDetail, hideDetail } from './detail.js';
-import { buildAtlasGui } from './atlasTuning.js';
+import { atlasTuning, buildAtlasGui } from './atlasTuning.js';
 import { loadAtlas } from './atlas.js';
+import { loadCoreFluid } from './coreFluid.js';
+import { buildPostFX } from './postFX.js';
 
 const probe = document.createElement('canvas');
 if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
@@ -19,7 +21,11 @@ const eqScene = document.getElementById('eqScene');
 const { scene, camera, camGroup, renderer } = createScene(eqScene);
 buildGui();
 buildAtlasGui();
-const { crust } = loadAtlas({ scene, radius: CRUST_RADIUS });
+const atlas = loadAtlas({ scene, radius: CRUST_RADIUS });
+const crust = atlas.crust;
+const core = loadCoreFluid({ scene, renderer });
+const postFX = buildPostFX({ renderer, scene, camera });
+window.addEventListener('resize', () => postFX.setSize(window.innerWidth, window.innerHeight));
 
 const loadingOverlay = document.getElementById('loadingoverlay');
 const clock = new Clock();
@@ -50,11 +56,14 @@ function animate() {
     requestAnimationFrame(animate);
     controls.update();
     scene.updateMatrixWorld();
-    updateUniforms(clock.getElapsedTime());
-    renderer.render(scene, camera);
+    const t = clock.getElapsedTime();
+    updateUniforms(t);
+    core.update(t);
+    postFX.update(t);
+    postFX.composer.render();
 }
 animate();
 
 if (typeof window !== 'undefined') {
-    window.__eqDebug = { scene, camera, camGroup, geoToVec3 };
+    window.__eqDebug = { scene, camera, camGroup, geoToVec3, atlasTuning };
 }
