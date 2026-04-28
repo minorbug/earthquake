@@ -19,7 +19,7 @@ import {
     Color,
     Vector3,
     Matrix4,
-    Float32BufferAttribute,
+    InstancedBufferAttribute,
     AdditiveBlending,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -217,7 +217,7 @@ export function loadPlateMotion({ scene, radius, atlas }) {
         colorAttr[(i * 2 + 1) * 3 + 1] = c.g;
         colorAttr[(i * 2 + 1) * 3 + 2] = c.b;
     }
-    arrowMesh.instanceColor = new Float32BufferAttribute(colorAttr, 3);
+    arrowMesh.instanceColor = new InstancedBufferAttribute(colorAttr, 3);
 
     populateArrowInstances(arrowMesh, samples, radius);
 

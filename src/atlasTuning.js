@@ -140,7 +140,7 @@ export function buildAtlasGui() {
     bindColor(fPlate.add(atlasTuning, 'flowOpacity',  0, 1, 0.01));
 
     const fGeom = gui.addFolder('Geometry');
-    bindColor(fGeom.add(atlasTuning, 'boundaryWidth', 0, 3, 0.05));
+    bindColor(fGeom.add(atlasTuning, 'boundaryWidth', 0, 12, 0.1));
 
     const fVis = gui.addFolder('Visibility');
     bindVis(fVis.add(atlasTuning, 'showLand'));
