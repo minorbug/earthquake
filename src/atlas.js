@@ -202,10 +202,10 @@ export function loadAtlas({ scene, radius }) {
         const mat = new LineMaterial({
             color: new Color(atlasTuning[g.colorKey]),
             linewidth: Math.max(0.1, atlasTuning.boundaryWidth),
-            worldUnits: true,
-            dashed: true,
-            dashSize: 200,
-            gapSize: 200,
+            worldUnits: false,    // linewidth is in pixels — actually visible
+            dashed: false,        // solid lines by default; flowEnabled toggles dash on
+            dashSize: 30,         // pixels
+            gapSize: 20,          // pixels
             transparent: true,
             opacity: 0.95,
         });

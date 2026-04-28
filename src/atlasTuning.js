@@ -43,7 +43,7 @@ const defaults = {
     // Plate motion vectors layer (PB2002 Euler poles + flow shader).
     plateMotionEnabled: true,
     arrowsEnabled:      true,
-    flowEnabled:        true,
+    flowEnabled:        false,   // dashes-along-boundaries animation; off by default (was distracting)
     arrowDensity:       5.0,    // sample spacing in degrees of arc
     arrowScale:         1.0,
     flowSpeed:          1.0,
