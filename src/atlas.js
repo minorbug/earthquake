@@ -5,21 +5,20 @@
 // projection, which natively handles antimeridian-spanning features (Eurasia+Africa,
 // Antarctica) that would break a flat 2D triangulator like earcut.
 //
-// Plate boundaries stay vector (LineSegments) — they're already short segments
-// and benefit from crisp line rendering.
+// Plate boundaries use LineSegments2/LineMaterial so that `boundaryWidth` maps
+// to real line thickness (world units, km) instead of just opacity.
 import {
     Mesh,
     SphereGeometry,
-    BufferGeometry,
-    BufferAttribute,
-    LineSegments,
-    LineBasicMaterial,
     ShaderMaterial,
     CanvasTexture,
     LinearFilter,
     DoubleSide,
     Color,
 } from 'three';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
+import { LineSegments2 }        from 'three/examples/jsm/lines/LineSegments2.js';
+import { LineMaterial }         from 'three/examples/jsm/lines/LineMaterial.js';
 import { geoToVec3 } from './feed.js';
 import { atlasTuning, onAtlasColorChange, onAtlasVisibilityChange } from './atlasTuning.js';
 import landJson from '../data/ne_110m_land.geojson' with { type: 'json' };
@@ -87,38 +86,20 @@ function rasterizeMask(width, height) {
 }
 
 // ---- Plate boundary line geometry ----
-function buildLineGeometry(features, radiusKm, flowFor) {
-    // flowFor(feature, vertexIndex) → {arc, speed, sign}
-    // arc: cumulative arc-length in km along the line so far
-    // speed: scalar — sqrt-compressed motion magnitude (mm/yr)
-    // sign: ±1 — drift direction along the line tangent
+function buildLineGeometry(features, radiusKm) {
     const positions = [];
-    const arcs      = [];
-    const speeds    = [];
-    const signs     = [];
     for (const feature of features) {
         const coords = feature.geometry.coordinates;
-        let acc = 0;
         for (let i = 0; i < coords.length - 1; i++) {
             const [lng0, lat0] = coords[i];
             const [lng1, lat1] = coords[i + 1];
             const a = geoToVec3(lat0, lng0, 0).normalize().multiplyScalar(radiusKm);
             const b = geoToVec3(lat1, lng1, 0).normalize().multiplyScalar(radiusKm);
             positions.push(a.x, a.y, a.z, b.x, b.y, b.z);
-            const segLenKm = a.distanceTo(b);
-            const f0 = flowFor ? flowFor(feature, i)     : { arc: acc, speed: 0, sign: 1 };
-            const f1 = flowFor ? flowFor(feature, i + 1) : { arc: acc + segLenKm, speed: 0, sign: 1 };
-            arcs.push(f0.arc, f1.arc);
-            speeds.push(f0.speed, f1.speed);
-            signs.push(f0.sign, f1.sign);
-            acc += segLenKm;
         }
     }
-    const geo = new BufferGeometry();
-    geo.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
-    geo.setAttribute('aArc',    new BufferAttribute(new Float32Array(arcs),    1));
-    geo.setAttribute('aSpeed',  new BufferAttribute(new Float32Array(speeds),  1));
-    geo.setAttribute('aSign',   new BufferAttribute(new Float32Array(signs),   1));
+    const geo = new LineSegmentsGeometry();
+    geo.setPositions(new Float32Array(positions));
     return geo;
 }
 
@@ -218,26 +199,49 @@ export function loadAtlas({ scene, radius }) {
     const boundaryGroups = [];
     for (const g of BOUNDARY_GROUPS) {
         const geo = buildLineGeometry(groupedFeatures[g.key], boundaryRadius);
-        const mat = new LineBasicMaterial({
+        const mat = new LineMaterial({
             color: new Color(atlasTuning[g.colorKey]),
+            linewidth: Math.max(0.1, atlasTuning.boundaryWidth),
+            worldUnits: true,
+            dashed: true,
+            dashSize: 200,
+            gapSize: 200,
             transparent: true,
-            opacity: Math.min(1, atlasTuning.boundaryWidth * g.alphaMult),
+            opacity: 0.95,
         });
-        const lines = new LineSegments(geo, mat);
+        mat.resolution.set(window.innerWidth, window.innerHeight);
+        const lines = new LineSegments2(geo, mat);
         lines.renderOrder = 2;
         scene.add(lines);
         boundaryGroups.push({ key: g.key, colorKey: g.colorKey, alphaMult: g.alphaMult, material: mat, mesh: lines, features: groupedFeatures[g.key] });
     }
     const otherGeo = buildLineGeometry(otherFeatures, boundaryRadius);
-    const otherMat = new LineBasicMaterial({
+    const otherMat = new LineMaterial({
         color: new Color(atlasTuning.otherColor),
+        linewidth: Math.max(0.1, atlasTuning.boundaryWidth),
+        worldUnits: true,
+        dashed: true,
+        dashSize: 200,
+        gapSize: 200,
         transparent: true,
-        opacity: atlasTuning.otherAlpha * atlasTuning.boundaryWidth,
+        opacity: atlasTuning.otherAlpha,
     });
-    const otherLines = new LineSegments(otherGeo, otherMat);
+    otherMat.resolution.set(window.innerWidth, window.innerHeight);
+    const otherLines = new LineSegments2(otherGeo, otherMat);
     otherLines.renderOrder = 2;
     scene.add(otherLines);
     boundaryGroups.push({ key: 'other', colorKey: 'otherColor', alphaMult: 1.0, material: otherMat, mesh: otherLines, isOther: true, features: otherFeatures });
+
+    // Keep LineMaterial resolution in sync with viewport size.
+    function updateResolution() {
+        const w = window.innerWidth, h = window.innerHeight;
+        for (const grp of boundaryGroups) {
+            if (grp.material && grp.material.isLineMaterial) {
+                grp.material.resolution.set(w, h);
+            }
+        }
+    }
+    window.addEventListener('resize', updateResolution);
 
     // Live tuning
     function applyColors(t) {
@@ -255,8 +259,12 @@ export function loadAtlas({ scene, radius }) {
         for (const g of boundaryGroups) {
             if (!g.material || !g.material.color) continue;   // guard: ShaderMaterial has no .color
             g.material.color.set(t[g.colorKey]);
-            const baseAlpha = g.isOther ? t.otherAlpha : 1.0;
-            g.material.opacity = Math.min(1, baseAlpha * t.boundaryWidth * g.alphaMult);
+            if (g.isOther) {
+                g.material.opacity = Math.min(1, t.otherAlpha);
+            }
+            if ('linewidth' in g.material) {
+                g.material.linewidth = Math.max(0.1, t.boundaryWidth);
+            }
         }
     }
     onAtlasColorChange(applyColors);
