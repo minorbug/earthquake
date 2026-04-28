@@ -15,10 +15,12 @@ import {
     ConeGeometry,
     CylinderGeometry,
     MeshBasicMaterial,
+    ShaderMaterial,
     Color,
     Vector3,
     Matrix4,
     Float32BufferAttribute,
+    AdditiveBlending,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildPoleIndex, velocityAt, sampleBoundaries } from './plateMotionMath.js';
@@ -55,6 +57,54 @@ function buildArrowGeometry() {
     // Rotate so the arrow points along +X with tail at origin.
     merged.rotateZ(-Math.PI / 2);
     return merged;
+}
+
+const flowVert = /* glsl */`
+    attribute float aArc;
+    attribute float aSpeed;
+    attribute float aSign;
+    varying float vArc;
+    varying float vSpeed;
+    varying float vSign;
+    void main() {
+        vArc   = aArc;
+        vSpeed = aSpeed;
+        vSign  = aSign;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+
+const flowFrag = /* glsl */`
+    precision highp float;
+    uniform vec3  uColor;
+    uniform float uTime;
+    uniform float uFlowSpeedScale;   // GUI multiplier
+    uniform float uDashFrequency;    // dashes per km of arc
+    uniform float uOpacity;
+    varying float vArc;
+    varying float vSpeed;
+    varying float vSign;
+    void main() {
+        float phase = vArc - vSign * vSpeed * uTime * uFlowSpeedScale;
+        float dash  = step(0.5, fract(phase * uDashFrequency));
+        gl_FragColor = vec4(uColor, dash * uOpacity);
+    }
+`;
+
+function buildFlowMaterial(colorHex, opacity) {
+    return new ShaderMaterial({
+        vertexShader: flowVert,
+        fragmentShader: flowFrag,
+        uniforms: {
+            uColor:           { value: new Color(colorHex) },
+            uTime:            { value: 0 },
+            uFlowSpeedScale:  { value: 1.0 },
+            uDashFrequency:   { value: 1.0 / 600.0 },  // ~1 dash per 600 km
+            uOpacity:         { value: 0.7 },
+        },
+        transparent: true,
+        depthWrite: false,
+    });
 }
 
 function compressLength(magMmYr) {
@@ -155,8 +205,18 @@ export function loadPlateMotion({ scene, radius, atlas }) {
 
     populateArrowInstances(arrowMesh, samples, radius);
 
-    function update(/* t */) {
-        // Filled in by Task 7 (flow shader uTime) and Task 8 (arrow updates).
+    // Replace each atlas boundary group's material with our flow shader.
+    const flowMaterials = [];
+    for (const grp of atlas.boundaryGroups) {
+        const baseColor = grp.material.color.getHex();
+        const newMat = buildFlowMaterial(baseColor, grp.material.opacity);
+        grp.mesh.material.dispose();
+        grp.mesh.material = newMat;
+        flowMaterials.push(newMat);
+    }
+
+    function update(t) {
+        for (const m of flowMaterials) m.uniforms.uTime.value = t;
     }
 
     return { update };

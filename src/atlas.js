@@ -87,20 +87,38 @@ function rasterizeMask(width, height) {
 }
 
 // ---- Plate boundary line geometry ----
-function buildLineGeometry(features, radiusKm) {
+function buildLineGeometry(features, radiusKm, flowFor) {
+    // flowFor(feature, vertexIndex) → {arc, speed, sign}
+    // arc: cumulative arc-length in km along the line so far
+    // speed: scalar — sqrt-compressed motion magnitude (mm/yr)
+    // sign: ±1 — drift direction along the line tangent
     const positions = [];
+    const arcs      = [];
+    const speeds    = [];
+    const signs     = [];
     for (const feature of features) {
         const coords = feature.geometry.coordinates;
+        let acc = 0;
         for (let i = 0; i < coords.length - 1; i++) {
             const [lng0, lat0] = coords[i];
             const [lng1, lat1] = coords[i + 1];
             const a = geoToVec3(lat0, lng0, 0).normalize().multiplyScalar(radiusKm);
             const b = geoToVec3(lat1, lng1, 0).normalize().multiplyScalar(radiusKm);
             positions.push(a.x, a.y, a.z, b.x, b.y, b.z);
+            const segLenKm = a.distanceTo(b);
+            const f0 = flowFor ? flowFor(feature, i)     : { arc: acc, speed: 0, sign: 1 };
+            const f1 = flowFor ? flowFor(feature, i + 1) : { arc: acc + segLenKm, speed: 0, sign: 1 };
+            arcs.push(f0.arc, f1.arc);
+            speeds.push(f0.speed, f1.speed);
+            signs.push(f0.sign, f1.sign);
+            acc += segLenKm;
         }
     }
     const geo = new BufferGeometry();
     geo.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
+    geo.setAttribute('aArc',    new BufferAttribute(new Float32Array(arcs),    1));
+    geo.setAttribute('aSpeed',  new BufferAttribute(new Float32Array(speeds),  1));
+    geo.setAttribute('aSign',   new BufferAttribute(new Float32Array(signs),   1));
     return geo;
 }
 
@@ -115,17 +133,19 @@ const crustVert = /* glsl */`
     }
 `;
 
-// Magma glow: when the surface normal is grazing the camera (limb of the
-// visible portion of the inner sphere), the inner "molten core" bleeds
-// through. Rim term = (1 - |dot(normal, view)|)^2.
+// Core glow: when the surface normal is grazing the camera (limb of the
+// visible portion of the inner sphere), the inner core bleeds through.
+// Rim term = pow(1 - |dot(normal, view)|, coreFalloff). Heat-haze
+// distortion happens in screen-space (postFX.js), not in this shader.
 const crustFrag = /* glsl */`
     precision highp float;
     uniform sampler2D mask;
     uniform vec3 oceanColor;
     uniform vec3 landColor;
     uniform vec3 antarcticaColor;
-    uniform vec3 magmaColor;
-    uniform float magmaIntensity;
+    uniform vec3 coreColor;
+    uniform float coreIntensity;
+    uniform float coreFalloff;
     varying vec3 vN;
     varying vec3 vWorldPos;
 
@@ -142,12 +162,12 @@ const crustFrag = /* glsl */`
         if (cat > 0.55) base = antarcticaColor;
         else if (cat > 0.20) base = landColor;
 
-        vec3 worldNormal = normalize(vWorldPos);  // sphere at origin
+        vec3 worldNormal = normalize(vWorldPos);
         vec3 viewDir = normalize(cameraPosition - vWorldPos);
         float ndv = abs(dot(worldNormal, viewDir));
-        float rim = pow(1.0 - ndv, 2.0);
+        float rim = pow(1.0 - ndv, coreFalloff);
 
-        vec3 color = base + magmaColor * rim * magmaIntensity;
+        vec3 color = base + coreColor * rim * coreIntensity;
         gl_FragColor = vec4(color, 1.0);
     }
 `;
@@ -172,8 +192,9 @@ export function loadAtlas({ scene, radius }) {
             oceanColor:      { value: new Color(atlasTuning.oceanColor) },
             landColor:       { value: new Color(atlasTuning.showLand ? atlasTuning.landColor : atlasTuning.oceanColor) },
             antarcticaColor: { value: new Color(atlasTuning.showLand ? atlasTuning.antarcticaColor : atlasTuning.oceanColor) },
-            magmaColor:      { value: new Color(atlasTuning.magmaColor) },
-            magmaIntensity:  { value: atlasTuning.magmaIntensity },
+            coreColor:       { value: new Color(atlasTuning.coreColor) },
+            coreIntensity:   { value: atlasTuning.coreIntensity },
+            coreFalloff:     { value: atlasTuning.coreFalloff },
         },
         vertexShader: crustVert,
         fragmentShader: crustFrag,
@@ -228,8 +249,9 @@ export function loadAtlas({ scene, radius }) {
             crustMat.uniforms.landColor.value.set(t.oceanColor);
             crustMat.uniforms.antarcticaColor.value.set(t.oceanColor);
         }
-        crustMat.uniforms.magmaColor.value.set(t.magmaColor);
-        crustMat.uniforms.magmaIntensity.value = t.magmaIntensity;
+        crustMat.uniforms.coreColor.value.set(t.coreColor);
+        crustMat.uniforms.coreIntensity.value = t.coreIntensity;
+        crustMat.uniforms.coreFalloff.value = t.coreFalloff;
         for (const g of boundaryGroups) {
             g.material.color.set(t[g.colorKey]);
             const baseAlpha = g.isOther ? t.otherAlpha : 1.0;
