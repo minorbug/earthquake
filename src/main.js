@@ -9,7 +9,6 @@ import { showDetail, hideDetail } from './detail.js';
 import { atlasTuning, buildAtlasGui } from './atlasTuning.js';
 import { loadAtlas } from './atlas.js';
 import { loadCore } from './core.js';
-import { loadCoreVolFluid } from './coreVolFluid.js';
 import { buildPostFX } from './postFX.js';
 
 const probe = document.createElement('canvas');
@@ -25,7 +24,20 @@ buildAtlasGui();
 const atlas = loadAtlas({ scene, radius: CRUST_RADIUS });
 const crust = atlas.crust;
 const core = loadCore({ scene });
-const volFluid = loadCoreVolFluid({ scene, renderer, camera });
+// Magma volumetric fluid layer is a build-time-optional feature. The check
+// references `process.env.ENABLE_MAGMA_FLUID` literally so Bun's `--define`
+// substitutes it inline at this exact site — dead-code elimination then
+// drops the if-branch *and* the dynamic import inside, keeping
+// coreVolFluid.js out of the bundle entirely when disabled. Anything else
+// (a constant in another module, a destructured alias, a getter) defeats
+// the substitution and the module ends up bundled even when unreachable.
+// Build with: `bun run build:no-fluid` (or set ENABLE_MAGMA_FLUID=false in
+// the dev server env).
+let volFluid = null;
+if (process.env.ENABLE_MAGMA_FLUID !== 'false') {
+    const { loadCoreVolFluid } = await import('./coreVolFluid.js');
+    volFluid = loadCoreVolFluid({ scene, renderer, camera });
+}
 const postFX = buildPostFX({ renderer, scene, camera });
 window.addEventListener('resize', () => postFX.setSize(window.innerWidth, window.innerHeight));
 
@@ -61,7 +73,7 @@ function animate() {
     const t = clock.getElapsedTime();
     updateUniforms(t);
     core.update(t);
-    volFluid.update(t);
+    if (volFluid) volFluid.update(t);
     postFX.update(t);
     postFX.composer.render();
 }
