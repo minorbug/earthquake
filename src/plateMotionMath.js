@@ -97,6 +97,7 @@ function slerpLatLng(lat1, lng1, lat2, lng2, t) {
  * The lng/lat ordering matches GeoJSON.
  */
 export function sampleBoundaries(segments, spacingDeg) {
+    if (!(spacingDeg > 0)) return [];
     const samples = [];
     let acc = 0;
     let target = spacingDeg;
@@ -105,7 +106,7 @@ export function sampleBoundaries(segments, spacingDeg) {
         const segLen = arcDeg(latA, lngA, latB, lngB);
         if (segLen < 1e-6) continue;
         // Walk this segment, emit samples while target falls within it.
-        while (target <= acc + segLen) {
+        while (target <= acc + segLen + 1e-9) {
             const t = (target - acc) / segLen;
             const { lat, lng } = slerpLatLng(latA, lngA, latB, lngB, t);
             // Tangent vector in 3D: derivative of slerp wrt t at this point,

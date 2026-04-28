@@ -84,8 +84,7 @@ test('sampleBoundaries - 30° of arc at 5° spacing gives ~6 samples', () => {
         type: 'OTF', plateA: 'PA', plateB: 'NA',
     }];
     const out = sampleBoundaries(segs, 5);
-    expect(out.length).toBeGreaterThanOrEqual(5);
-    expect(out.length).toBeLessThanOrEqual(7);
+    expect(out.length).toBe(6);
     // First sample should be near the start
     expect(Math.abs(out[0].lat)).toBeLessThan(8);
 });
@@ -102,4 +101,10 @@ test('sampleBoundaries - sample carries segment tangent', () => {
     const len = Math.hypot(t.x, t.y, t.z);
     expect(len).toBeGreaterThan(0.99);
     expect(len).toBeLessThan(1.01);
+});
+
+test('sampleBoundaries - non-positive spacing returns empty', () => {
+    const segs = [{ coords: [[0,0],[0,30]], type:'OTF', plateA:'PA', plateB:'NA' }];
+    expect(sampleBoundaries(segs, 0)).toEqual([]);
+    expect(sampleBoundaries(segs, -5)).toEqual([]);
 });
