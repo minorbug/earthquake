@@ -56,3 +56,50 @@ test('velocityAt - swapping plates flips the direction', () => {
     expect(a.direction.y).toBeCloseTo(-b.direction.y, 5);
     expect(a.direction.z).toBeCloseTo(-b.direction.z, 5);
 });
+
+import { sampleBoundaries } from './plateMotionMath.js';
+
+test('sampleBoundaries - empty input gives empty output', () => {
+    expect(sampleBoundaries([], 5)).toEqual([]);
+});
+
+test('sampleBoundaries - one short segment gives at most one sample', () => {
+    const segs = [{
+        coords: [[0, 0], [1, 0]],   // 1° of arc
+        type: 'OSR', plateA: 'PA', plateB: 'NA',
+    }];
+    const out = sampleBoundaries(segs, 5);
+    expect(out.length).toBeLessThanOrEqual(1);
+    if (out.length === 1) {
+        expect(out[0].plateA).toBe('PA');
+        expect(out[0].plateB).toBe('NA');
+        expect(out[0].type).toBe('OSR');
+    }
+});
+
+test('sampleBoundaries - 30° of arc at 5° spacing gives ~6 samples', () => {
+    // A long meridian segment from (0,0) to (30,0) is 30° of great-circle arc.
+    const segs = [{
+        coords: [[0, 0], [0, 30]],
+        type: 'OTF', plateA: 'PA', plateB: 'NA',
+    }];
+    const out = sampleBoundaries(segs, 5);
+    expect(out.length).toBeGreaterThanOrEqual(5);
+    expect(out.length).toBeLessThanOrEqual(7);
+    // First sample should be near the start
+    expect(Math.abs(out[0].lat)).toBeLessThan(8);
+});
+
+test('sampleBoundaries - sample carries segment tangent', () => {
+    const segs = [{
+        coords: [[0, 0], [0, 30]],
+        type: 'OTF', plateA: 'PA', plateB: 'NA',
+    }];
+    const out = sampleBoundaries(segs, 5);
+    // For a meridian segment, the tangent should be roughly +lat direction.
+    expect(out[0].tangent).toBeDefined();
+    const t = out[0].tangent;
+    const len = Math.hypot(t.x, t.y, t.z);
+    expect(len).toBeGreaterThan(0.99);
+    expect(len).toBeLessThan(1.01);
+});
