@@ -105,7 +105,37 @@ const boundariesRounded = {
 };
 writeFileSync(resolve('data/pb2002_boundaries.geojson'), JSON.stringify(boundariesRounded));
 
-console.log('Wrote 3 files to data/.');
+// Same step segments but with PlateA/PlateB preserved, for plateMotion.js.
+// Source has plate pairs as PLATEBOUND (e.g. "AF-AN", "AU/PA", "AN\SA");
+// split on any separator to get the two plate codes.
+const stepsWithPlates = {
+    type: 'FeatureCollection',
+    features: boundaries.features
+        .map((f) => {
+            const c = f.geometry.coordinates;
+            const start = [round2(c[0][0]), round2(c[0][1])];
+            const end   = [round2(c[c.length - 1][0]), round2(c[c.length - 1][1])];
+            const p = f.properties;
+            const parts = (p.PLATEBOUND || '').split(/[-/\\]/);
+            return {
+                type: 'Feature',
+                properties: {
+                    Type: p.STEPCLASS || '',
+                    PlateA: parts[0] || '',
+                    PlateB: parts[1] || '',
+                },
+                geometry: { type: 'LineString', coordinates: [start, end] },
+            };
+        })
+        .filter((f) => {
+            const [a, b] = f.geometry.coordinates;
+            return a[0] !== b[0] || a[1] !== b[1];
+        }),
+};
+writeFileSync(resolve('data/pb2002_steps_with_plates.geojson'), JSON.stringify(stepsWithPlates));
+
+console.log('Wrote 4 files to data/.');
 console.log('  ne_110m_land.geojson:', landFiltered.features.length, 'features');
 console.log('  ne_110m_antarctica.geojson: 1 feature');
 console.log('  pb2002_boundaries.geojson:', boundariesRounded.features.length, 'features');
+console.log('  pb2002_steps_with_plates.geojson:', stepsWithPlates.features.length, 'features');
