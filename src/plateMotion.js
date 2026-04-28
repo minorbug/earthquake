@@ -28,7 +28,9 @@ import { atlasTuning, onAtlasColorChange, onAtlasVisibilityChange } from './atla
 import polesData from '../data/pb2002_poles.json' with { type: 'json' };
 import stepsData from '../data/pb2002_steps_with_plates.geojson' with { type: 'json' };
 
-const SAMPLE_SPACING_DEG = 5.0;
+// SAMPLE_SPACING_DEG is read from atlasTuning.arrowDensity at module init;
+// density changes require a page reload (rebuilding instances live would
+// be a significant restructure — arrowDensity is treated as a startup param).
 
 const ARROW_RADIUS_FACTOR = 0.998;   // sit just inside the crust
 const ARROW_MIN_LEN_KM    = 120;
@@ -82,12 +84,16 @@ const flowFrag = /* glsl */`
     uniform float uFlowSpeedScale;   // GUI multiplier
     uniform float uDashFrequency;    // dashes per km of arc
     uniform float uOpacity;
+    uniform float uFlowEnabled;      // 1.0 = animated dashes, 0.0 = solid line
     varying float vArc;
     varying float vSpeed;
     varying float vSign;
     void main() {
-        float phase = vArc - vSign * vSpeed * uTime * uFlowSpeedScale;
-        float dash  = step(0.5, fract(phase * uDashFrequency));
+        float dash = 1.0;
+        if (uFlowEnabled > 0.5) {
+            float phase = vArc - vSign * vSpeed * uTime * uFlowSpeedScale;
+            dash = step(0.5, fract(phase * uDashFrequency));
+        }
         gl_FragColor = vec4(uColor, dash * uOpacity);
     }
 `;
@@ -102,6 +108,7 @@ function buildFlowMaterial(colorHex, opacity) {
             uFlowSpeedScale:  { value: 1.0 },
             uDashFrequency:   { value: 1.0 / 600.0 },  // ~1 dash per 600 km
             uOpacity:         { value: 0.7 },
+            uFlowEnabled:     { value: 1.0 },
         },
         transparent: true,
         depthWrite: false,
@@ -135,15 +142,21 @@ function arrowMatrix(latLngXyzPos, dirXyz, lengthKm, surfaceRadius) {
     return m;
 }
 
+const DEG_ARROW = Math.PI / 180;
+const TEXTURE_EDGE_LNG_ARROW = -180.806168;
+function arrowLatLngToXyz(lat, lng) {
+    const phi   = (90 - lat) * DEG_ARROW;
+    const theta = (180 - (lng - TEXTURE_EDGE_LNG_ARROW)) * DEG_ARROW;
+    const sp = Math.sin(phi);
+    return { x: sp * Math.cos(theta), y: Math.cos(phi), z: sp * Math.sin(theta) };
+}
+
 function populateArrowInstances(arrowMesh, samples, surfaceRadius) {
     for (let i = 0; i < samples.length; i++) {
         const s = samples[i];
-        const lat = s.lat * Math.PI / 180;
-        const lng = s.lng * Math.PI / 180;
-        const cp = Math.cos(lat);
-        const r3d = { x: cp * Math.cos(lng), y: Math.sin(lat), z: cp * Math.sin(lng) };
-        const lenA = compressLength(s.vA.magnitude);
-        const lenB = compressLength(s.vB.magnitude);
+        const r3d = arrowLatLngToXyz(s.lat, s.lng);
+        const lenA = compressLength(s.vA.magnitude) * atlasTuning.arrowScale;
+        const lenB = compressLength(s.vB.magnitude) * atlasTuning.arrowScale;
         arrowMesh.setMatrixAt(i * 2,     arrowMatrix(r3d, s.vA.direction, lenA, surfaceRadius));
         arrowMesh.setMatrixAt(i * 2 + 1, arrowMatrix(r3d, s.vB.direction, lenB, surfaceRadius));
     }
@@ -161,7 +174,9 @@ export function loadPlateMotion({ scene, radius, atlas }) {
         plateB: f.properties.PlateB || '',
     }));
 
-    const rawSamples = sampleBoundaries(segments, SAMPLE_SPACING_DEG);
+    // arrowDensity is a startup param — density changes require a page reload.
+    const sampleSpacing = atlasTuning.arrowDensity;
+    const rawSamples = sampleBoundaries(segments, sampleSpacing);
 
     // Annotate each sample with computed velocities for both adjacent plates.
     // Drop samples whose plate pair isn't in the pole table — the rendering
@@ -217,18 +232,19 @@ export function loadPlateMotion({ scene, radius, atlas }) {
     }
 
     // Helper: surface tangent at a lat/lng (used to determine flow direction sign).
+    // Uses the same angle convention as feed.geoToVec3 so tangent signs match
+    // the flow shader's vertex positions.
+    const DEG_LOCAL = Math.PI / 180;
+    const TEXTURE_EDGE_LNG_LOCAL = -180.806168;
+    function latlngToXyzLocal(lat, lng) {
+        const phi   = (90 - lat) * DEG_LOCAL;
+        const theta = (180 - (lng - TEXTURE_EDGE_LNG_LOCAL)) * DEG_LOCAL;
+        const sp = Math.sin(phi);
+        return { x: sp * Math.cos(theta), y: Math.cos(phi), z: sp * Math.sin(theta) };
+    }
     function tangentAt(lat1, lng1, lat2, lng2) {
-        const DEG_LOCAL = Math.PI / 180;
-        const a = {
-            x: Math.cos(lat1 * DEG_LOCAL) * Math.cos(lng1 * DEG_LOCAL),
-            y: Math.sin(lat1 * DEG_LOCAL),
-            z: Math.cos(lat1 * DEG_LOCAL) * Math.sin(lng1 * DEG_LOCAL),
-        };
-        const b = {
-            x: Math.cos(lat2 * DEG_LOCAL) * Math.cos(lng2 * DEG_LOCAL),
-            y: Math.sin(lat2 * DEG_LOCAL),
-            z: Math.cos(lat2 * DEG_LOCAL) * Math.sin(lng2 * DEG_LOCAL),
-        };
+        const a = latlngToXyzLocal(lat1, lng1);
+        const b = latlngToXyzLocal(lat2, lng2);
         return { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z };
     }
 
@@ -270,28 +286,35 @@ export function loadPlateMotion({ scene, radius, atlas }) {
     // localStorage).
     arrowMesh.visible = atlasTuning.plateMotionEnabled && atlasTuning.arrowsEnabled;
     for (const grp of atlas.boundaryGroups) {
-        grp.mesh.visible = atlasTuning.showBoundaries
-            && (!atlasTuning.plateMotionEnabled || atlasTuning.flowEnabled);
+        grp.mesh.visible = atlasTuning.showBoundaries;
     }
     for (const m of flowMaterials) {
-        m.uniforms.uFlowSpeedScale.value = atlasTuning.flowSpeed;
+        m.uniforms.uFlowEnabled.value     = (atlasTuning.plateMotionEnabled && atlasTuning.flowEnabled) ? 1.0 : 0.0;
+        m.uniforms.uFlowSpeedScale.value  = atlasTuning.flowSpeed;
         m.uniforms.uOpacity.value         = atlasTuning.flowOpacity;
     }
 
     onAtlasColorChange((tn) => {
-        for (const m of flowMaterials) {
-            m.uniforms.uFlowSpeedScale.value = tn.flowSpeed;
-            m.uniforms.uOpacity.value         = tn.flowOpacity;
+        for (let i = 0; i < atlas.boundaryGroups.length; i++) {
+            const grp = atlas.boundaryGroups[i];
+            const mat = flowMaterials[i];
+            if (!mat) continue;
+            mat.uniforms.uColor.value.set(tn[grp.colorKey]);
+            mat.uniforms.uFlowSpeedScale.value = tn.flowSpeed;
+            mat.uniforms.uOpacity.value         = tn.flowOpacity;
         }
-        // arrowDensity and arrowScale changes require regenerating samples or
-        // matrices; rather than rebuilding live, leave a code comment that a
-        // page reload picks them up. (Both are uncommon-tweak settings.)
+        // arrowScale: rebuild instance matrices (cheap, ~480 instances).
+        populateArrowInstances(arrowMesh, samples, radius);
+        // arrowDensity: changing spacing requires rebuilding samples+instances
+        // from scratch — too expensive to do live. A page reload picks it up.
     });
     onAtlasVisibilityChange((tn) => {
         arrowMesh.visible = tn.plateMotionEnabled && tn.arrowsEnabled;
         for (const grp of atlas.boundaryGroups) {
-            grp.mesh.visible = tn.showBoundaries
-                && (!tn.plateMotionEnabled || tn.flowEnabled);
+            grp.mesh.visible = tn.showBoundaries;   // boundaries always visible; flow driven by uFlowEnabled
+        }
+        for (const m of flowMaterials) {
+            m.uniforms.uFlowEnabled.value = (tn.plateMotionEnabled && tn.flowEnabled) ? 1.0 : 0.0;
         }
     });
 

@@ -10,11 +10,14 @@ const EARTH_RADIUS_KM = 6371;
 // So mm/yr per (deg/Myr) = R_km * π/180.
 const MM_PER_YR_PER_DEG_PER_MYR = EARTH_RADIUS_KM * DEG;
 
+// Must match feed.js geoToVec3 convention so arrows overlay boundary lines.
+const TEXTURE_EDGE_LNG = -180.806168;
+
 function latLngToXyz(lat, lng) {
-    const phi = lat * DEG;
-    const lam = lng * DEG;
-    const cp = Math.cos(phi);
-    return { x: cp * Math.cos(lam), y: Math.sin(phi), z: cp * Math.sin(lam) };
+    const phi   = (90 - lat) * DEG;
+    const theta = (180 - (lng - TEXTURE_EDGE_LNG)) * DEG;
+    const sp = Math.sin(phi);
+    return { x: sp * Math.cos(theta), y: Math.cos(phi), z: sp * Math.sin(theta) };
 }
 
 function cross(a, b) {

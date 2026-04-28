@@ -75,8 +75,16 @@ const visibilityListeners = [];
 export function onAtlasColorChange(cb)      { colorListeners.push(cb); }
 export function onAtlasVisibilityChange(cb) { visibilityListeners.push(cb); }
 
-function fireColors()     { colorListeners.forEach((cb) => cb(atlasTuning)); }
-function fireVisibility() { visibilityListeners.forEach((cb) => cb(atlasTuning)); }
+function fireColors() {
+    for (const cb of colorListeners) {
+        try { cb(atlasTuning); } catch (e) { console.error('atlasTuning color listener:', e); }
+    }
+}
+function fireVisibility() {
+    for (const cb of visibilityListeners) {
+        try { cb(atlasTuning); } catch (e) { console.error('atlasTuning visibility listener:', e); }
+    }
+}
 
 export function buildAtlasGui() {
     const gui = new GUI({ width: 300, title: 'Atlas' });

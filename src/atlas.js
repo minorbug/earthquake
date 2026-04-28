@@ -253,6 +253,7 @@ export function loadAtlas({ scene, radius }) {
         crustMat.uniforms.coreIntensity.value = t.coreIntensity;
         crustMat.uniforms.coreFalloff.value = t.coreFalloff;
         for (const g of boundaryGroups) {
+            if (!g.material || !g.material.color) continue;   // guard: ShaderMaterial has no .color
             g.material.color.set(t[g.colorKey]);
             const baseAlpha = g.isOther ? t.otherAlpha : 1.0;
             g.material.opacity = Math.min(1, baseAlpha * t.boundaryWidth * g.alphaMult);
