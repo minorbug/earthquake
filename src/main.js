@@ -8,7 +8,8 @@ import { attachControls } from './controls.js';
 import { showDetail, hideDetail } from './detail.js';
 import { atlasTuning, buildAtlasGui } from './atlasTuning.js';
 import { loadAtlas } from './atlas.js';
-import { loadCoreFluid } from './coreFluid.js';
+import { loadCore } from './core.js';
+import { loadCoreVolFluid } from './coreVolFluid.js';
 import { buildPostFX } from './postFX.js';
 
 const probe = document.createElement('canvas');
@@ -23,7 +24,8 @@ buildGui();
 buildAtlasGui();
 const atlas = loadAtlas({ scene, radius: CRUST_RADIUS });
 const crust = atlas.crust;
-const core = loadCoreFluid({ scene, renderer });
+const core = loadCore({ scene });
+const volFluid = loadCoreVolFluid({ scene, renderer, camera });
 const postFX = buildPostFX({ renderer, scene, camera });
 window.addEventListener('resize', () => postFX.setSize(window.innerWidth, window.innerHeight));
 
@@ -59,6 +61,7 @@ function animate() {
     const t = clock.getElapsedTime();
     updateUniforms(t);
     core.update(t);
+    volFluid.update(t);
     postFX.update(t);
     postFX.composer.render();
 }
