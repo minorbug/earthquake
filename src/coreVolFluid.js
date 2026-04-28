@@ -344,7 +344,7 @@ export function loadCoreVolFluid({ scene, renderer }) {
             dyeMap:      { value: fluid.getDyeTexture() },
             innerRadius: { value: innerR },
             outerRadius: { value: outerR },
-            intensity:   { value: 1.0 },
+            intensity:   { value: atlasTuning.fluidIntensity },
             time:        { value: 0 },
             hotColor:    { value: new Color(atlasTuning.coreHotColor) },
             coolColor:   { value: new Color(atlasTuning.coreCoolColor) },
@@ -359,16 +359,22 @@ export function loadCoreVolFluid({ scene, renderer }) {
     let currentRadius = innerR;
     const geo = new SphereGeometry(outerR, 64, 32);
     const mesh = new Mesh(geo, mat);
-    mesh.visible = atlasTuning.coreEnabled;
+    mesh.visible = atlasTuning.coreEnabled && atlasTuning.fluidEnabled;
     mesh.renderOrder = 1;
     scene.add(mesh);
+
+    // Apply atlasTuning's fluid params to the kernel uniforms now (defaults
+    // are also encoded in the shader-material constructor for prototype-only
+    // dev paths, but atlasTuning is the source of truth for live tuning).
+    fluid.velMat.uniforms.buoyancy.value = atlasTuning.fluidBuoyancy;
+    fluid.dyeMat.uniforms.decay.value    = atlasTuning.fluidDecay;
 
     const hotspots = [];
     const hotspotUniformArr = Array.from({ length: MAX_HOTSPOTS }, () => new Vector3());
     let lastT = 0;
     let pendingDt = 0;
     const cfg = {
-        spawnRate: 3.2,
+        spawnRate: atlasTuning.fluidSpawnRate,
         intensityRange: [0.6, 1.0],
         lifetimeRange: [1.3, 2.4],
     };
@@ -430,6 +436,10 @@ export function loadCoreVolFluid({ scene, renderer }) {
     onAtlasColorChange((tn) => {
         mat.uniforms.hotColor.value.set(tn.coreHotColor);
         mat.uniforms.coolColor.value.set(tn.coreCoolColor);
+        mat.uniforms.intensity.value = tn.fluidIntensity;
+        fluid.velMat.uniforms.buoyancy.value = tn.fluidBuoyancy;
+        fluid.dyeMat.uniforms.decay.value    = tn.fluidDecay;
+        cfg.spawnRate = tn.fluidSpawnRate;
         if (tn.coreRadius !== currentRadius) {
             currentRadius = tn.coreRadius;
             const newOuter = currentRadius * SHELL_FACTOR;
@@ -440,7 +450,7 @@ export function loadCoreVolFluid({ scene, renderer }) {
         }
     });
     onAtlasVisibilityChange((tn) => {
-        mesh.visible = tn.coreEnabled;
+        mesh.visible = tn.coreEnabled && tn.fluidEnabled;
     });
 
     // Pre-warm: spin the sim with a few hot spots so the page loads with
