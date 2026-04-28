@@ -24,6 +24,7 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildPoleIndex, velocityAt, sampleBoundaries } from './plateMotionMath.js';
+import { atlasTuning, onAtlasColorChange, onAtlasVisibilityChange } from './atlasTuning.js';
 import polesData from '../data/pb2002_poles.json' with { type: 'json' };
 import stepsData from '../data/pb2002_steps_with_plates.geojson' with { type: 'json' };
 
@@ -263,6 +264,36 @@ export function loadPlateMotion({ scene, radius, atlas }) {
     function update(t) {
         for (const m of flowMaterials) m.uniforms.uTime.value = t;
     }
+
+    // Apply initial state from atlasTuning (defaults are also encoded in
+    // buildFlowMaterial; this picks up any user-tweaked values from
+    // localStorage).
+    arrowMesh.visible = atlasTuning.plateMotionEnabled && atlasTuning.arrowsEnabled;
+    for (const grp of atlas.boundaryGroups) {
+        grp.mesh.visible = atlasTuning.showBoundaries
+            && (!atlasTuning.plateMotionEnabled || atlasTuning.flowEnabled);
+    }
+    for (const m of flowMaterials) {
+        m.uniforms.uFlowSpeedScale.value = atlasTuning.flowSpeed;
+        m.uniforms.uOpacity.value         = atlasTuning.flowOpacity;
+    }
+
+    onAtlasColorChange((tn) => {
+        for (const m of flowMaterials) {
+            m.uniforms.uFlowSpeedScale.value = tn.flowSpeed;
+            m.uniforms.uOpacity.value         = tn.flowOpacity;
+        }
+        // arrowDensity and arrowScale changes require regenerating samples or
+        // matrices; rather than rebuilding live, leave a code comment that a
+        // page reload picks them up. (Both are uncommon-tweak settings.)
+    });
+    onAtlasVisibilityChange((tn) => {
+        arrowMesh.visible = tn.plateMotionEnabled && tn.arrowsEnabled;
+        for (const grp of atlas.boundaryGroups) {
+            grp.mesh.visible = tn.showBoundaries
+                && (!tn.plateMotionEnabled || tn.flowEnabled);
+        }
+    });
 
     return { update };
 }
