@@ -18,7 +18,6 @@ import {
     Color,
     Vector3,
     Matrix4,
-    InstancedBufferAttribute,
     Raycaster,
     Vector2,
 } from 'three';
@@ -58,10 +57,13 @@ const TYPE_COLORS = {
 const DEFAULT_COLOR = 0xffffff;
 
 function buildArrowGeometry() {
-    // Stem along +Y, then we rotate it onto +X.
-    const stem = new CylinderGeometry(0.05, 0.05, 0.7, 8, 1, true);
+    // Stem along +Y, then we rotate it onto +X. Radii are intentionally
+    // beefy (stem 0.3 / head 0.6 in unit-arrow space) so that even with
+    // arrowThickness ≈ 1 the cross-section reads as a visible bar/cone
+    // from camera distance, not a hair.
+    const stem = new CylinderGeometry(0.3, 0.3, 0.7, 12, 1, true);
     stem.translate(0, 0.35, 0);
-    const head = new ConeGeometry(0.15, 0.3, 12);
+    const head = new ConeGeometry(0.6, 0.3, 16);
     head.translate(0, 0.85, 0);
     const merged = mergeGeometries([stem, head]);
     // Rotate so the arrow points along +X with tail at origin.
@@ -201,29 +203,15 @@ export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
     }
 
     // ----- Arrow InstancedMesh -----
+    // Single colour for all arrows (atlasTuning.arrowColor) — set on the
+    // material directly. The boundary line colour already conveys class.
     const arrowGeo = buildArrowGeometry();
-    const arrowMat = new MeshBasicMaterial({ vertexColors: true });
+    const arrowMat = new MeshBasicMaterial({ color: new Color(atlasTuning.arrowColor) });
     const totalArrows = samples.length * 2;
     const arrowMesh = new InstancedMesh(arrowGeo, arrowMat, totalArrows);
     arrowMesh.frustumCulled = false;
     arrowMesh.renderOrder = 3;
     scene.add(arrowMesh);
-
-    // Per-instance color: master color from atlasTuning.arrowColor, applied
-    // uniformly to every instance. Class-coded boundary lines already convey
-    // type; the arrow color is now a single user-tunable accent.
-    const colorAttr = new Float32Array(totalArrows * 3);
-    function repaintArrows() {
-        const c = new Color(atlasTuning.arrowColor);
-        for (let i = 0; i < totalArrows; i++) {
-            colorAttr[i * 3 + 0] = c.r;
-            colorAttr[i * 3 + 1] = c.g;
-            colorAttr[i * 3 + 2] = c.b;
-        }
-        if (arrowMesh.instanceColor) arrowMesh.instanceColor.needsUpdate = true;
-    }
-    repaintArrows();
-    arrowMesh.instanceColor = new InstancedBufferAttribute(colorAttr, 3);
 
     const arrowStates = buildArrowStates(samples, radius);
     writeAllArrows(arrowMesh, arrowStates, 0);
@@ -330,7 +318,7 @@ export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
             const v = (i % 2 === 0) ? samples[sIdx].vA : samples[sIdx].vB;
             arrowStates[i].length = compressLength(v.magnitude) * tn.arrowScale;
         }
-        repaintArrows();
+        arrowMat.color.set(tn.arrowColor);
         applyFlowOpacity();
     });
     onAtlasVisibilityChange((tn) => {
