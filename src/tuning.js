@@ -11,20 +11,12 @@ const defaults = {
     deformAmpMax: 0.45,
     pulseHzMin: 0.4,
     pulseHzMax: 1.6,
-    // Rings
-    maxReachMin: 3,
-    maxReachMax: 8,
-    cycleSec: 3.0,
-    alphaExp: 1.5,
-    thicknessFrac: 0.08,
-    thicknessFalloff: 0.2,
     // Color
     emberHex: '#ffeebb',
     midHex: '#ff7733',
     cyanHex: '#22ccff',
     depthNormKm: 300,
     // Globals
-    ringCount: 3,
     visible: true,
 };
 
@@ -46,9 +38,6 @@ function save() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(snap));
     } catch (e) {}
 }
-
-const ringCountListeners = [];
-export function onRingCountChange(cb) { ringCountListeners.push(cb); }
 
 function copyJson() {
     const snap = {};
@@ -81,14 +70,6 @@ export function buildGui() {
     bind(fBlob.add(tuning, 'pulseHzMin',    0,    3, 0.05));
     bind(fBlob.add(tuning, 'pulseHzMax',    0,    5, 0.05));
 
-    const fRings = gui.addFolder('Rings');
-    bind(fRings.add(tuning, 'maxReachMin',     1,  20, 0.1));
-    bind(fRings.add(tuning, 'maxReachMax',     1,  30, 0.1));
-    bind(fRings.add(tuning, 'cycleSec',      0.5,   8, 0.1));
-    bind(fRings.add(tuning, 'alphaExp',      0.5,   3, 0.05));
-    bind(fRings.add(tuning, 'thicknessFrac', 0.02, 0.3, 0.005));
-    bind(fRings.add(tuning, 'thicknessFalloff', 0,   1, 0.01));
-
     const fColor = gui.addFolder('Color');
     bind(fColor.addColor(tuning, 'emberHex'));
     bind(fColor.addColor(tuning, 'midHex'));
@@ -96,18 +77,13 @@ export function buildGui() {
     bind(fColor.add(tuning, 'depthNormKm', 50, 1000, 10));
 
     const fGlobals = gui.addFolder('Globals');
-    const ringCtl = fGlobals.add(tuning, 'ringCount', 1, 6, 1);
-    ringCtl.onChange((v) => { save(); ringCountListeners.forEach(cb => cb(v)); });
-    allControllers.push(ringCtl);
     bind(fGlobals.add(tuning, 'visible'));
     fGlobals.add({ copyAsJson: copyJson }, 'copyAsJson').name('Copy as JSON');
     fGlobals.add({
         reset: () => {
-            const prevRingCount = tuning.ringCount;
             for (const k in defaults) tuning[k] = defaults[k];
             save();
             allControllers.forEach(c => c.updateDisplay());
-            if (prevRingCount !== tuning.ringCount) ringCountListeners.forEach(cb => cb(tuning.ringCount));
         },
     }, 'reset').name('Reset to defaults');
 }
