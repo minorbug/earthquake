@@ -7,6 +7,14 @@ Earthquake is a personal project that I decided to create to brush up on newer w
 * Twitter: [@nerdmattbaker](http://twitter.com/nerdmattbaker)
 
 
+## Data Sources
+
+- **Plate boundaries:** PB2002 (Bird, P. 2003. "An updated digital model of plate boundaries." *Geochemistry, Geophysics, Geosystems* 4(3): 1027. doi:10.1029/2001GC000252). Sourced from [fraxen/tectonicplates](https://github.com/fraxen/tectonicplates).
+- **Active faults:** GEM Global Active Faults Database (Styron, R. & Pagani, M. 2020. "The GEM Global Active Faults Database." *Earthquake Spectra* 36(1_suppl): 160–180. doi:10.1177/8755293020944182). Sourced from [GEMScienceTools/gem-global-active-faults](https://github.com/GEMScienceTools/gem-global-active-faults). License: **CC-BY-SA 4.0** — derivatives (including this repository's `data/gem_active_faults_trimmed.geojson`) must be redistributed under the same license.
+- **Land + countries:** Natural Earth public-domain vector data via [nvkelso/natural-earth-vector](https://github.com/nvkelso/natural-earth-vector).
+- **Earthquake feed:** USGS Earthquake Hazards Program real-time GeoJSON feed.
+
+
 ## Quick start
 
 Using Google Chrome (I hope to optimize for other browsers as well):
