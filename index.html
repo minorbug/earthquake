@@ -26,12 +26,6 @@
         <div id="detail-attrib">© OpenStreetMap contributors</div>
     </div>
     <div id="eqScene"></div>
-    <!-- Stub process.env so build-time feature flags
-         (`process.env.ENABLE_MAGMA_FLUID` etc.) read undefined at runtime in
-         dev builds (where Bun's `--define` substitution doesn't fire).
-         Production builds replace the literal pattern at compile time, so
-         this stub is harmless dead air there. -->
-    <script>window.process = window.process || { env: {} };</script>
     <script type="module" src="./src/main.js"></script>
 </body>
 </html>
