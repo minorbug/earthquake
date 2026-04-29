@@ -9,7 +9,6 @@ import { showDetail, hideDetail } from './detail.js';
 import { atlasTuning, buildAtlasGui } from './atlasTuning.js';
 import { loadAtlas } from './atlas.js';
 import { loadCore } from './core.js';
-import { buildPostFX } from './postFX.js';
 
 const probe = document.createElement('canvas');
 if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
@@ -38,8 +37,6 @@ if (process.env.ENABLE_MAGMA_FLUID !== 'false') {
     const { loadCoreVolFluid } = await import('./coreVolFluid.js');
     volFluid = loadCoreVolFluid({ scene, renderer, camera });
 }
-const postFX = buildPostFX({ renderer, scene, camera });
-window.addEventListener('resize', () => postFX.setSize(window.innerWidth, window.innerHeight));
 
 const loadingOverlay = document.getElementById('loadingoverlay');
 const clock = new Clock();
@@ -74,8 +71,7 @@ function animate() {
     updateUniforms(t);
     core.update(t);
     if (volFluid) volFluid.update(t);
-    postFX.update(t);
-    postFX.composer.render();
+    renderer.render(scene, camera);
 }
 animate();
 

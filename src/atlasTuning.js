@@ -11,10 +11,6 @@ const defaults = {
     coreColor:       '#ff3008',
     coreIntensity:   0.35,
     coreFalloff:     2.0,
-    // Heat-haze post-FX (screen-space ripple over bottom strip)
-    hazeAmount:      0.5,   // distortion magnitude (0–1)
-    hazeHeight:      0.10,  // fraction of viewport from bottom that ripples
-    hazeSpeed:       1.0,   // wave temporal scale
     // Magma core (real 3D orb at origin)
     coreEnabled:     true,
     coreRadius:      4500,    // km. Camera sits at ~5800; this fills the lower viewport.
@@ -104,11 +100,6 @@ export function buildAtlasGui() {
     bindColor(fCore.addColor(atlasTuning, 'coreColor'));
     bindColor(fCore.add(atlasTuning, 'coreIntensity', 0, 2, 0.01));
     bindColor(fCore.add(atlasTuning, 'coreFalloff', 0.25, 4, 0.05).name('coreFalloff (lower = wider)'));
-
-    const fHaze = gui.addFolder('Heat haze');
-    bindColor(fHaze.add(atlasTuning, 'hazeAmount', 0, 1, 0.01));
-    bindColor(fHaze.add(atlasTuning, 'hazeHeight', 0, 0.5, 0.01));
-    bindColor(fHaze.add(atlasTuning, 'hazeSpeed', 0, 3, 0.05));
 
     const fCoreOrb = gui.addFolder('Magma core');
     bindVis(fCoreOrb.add(atlasTuning, 'coreEnabled'));
