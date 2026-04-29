@@ -9,11 +9,13 @@ Add a global intraplate fault line layer to the visualizer so seismically active
 
 ## Source
 
-**Dataset:** GEM Global Active Faults (GAF) — `GEMScienceTools/gem-global-active-faults` on GitHub. A community-maintained global compilation of active faults released as GeoJSON LineString features with attributes including `name`, `slip_type`, `last_movement`, and `slip_rate`.
+**Dataset:** GEM Global Active Faults (GAF) — `GEMScienceTools/gem-global-active-faults` on GitHub. A community-maintained global compilation of active faults released as GeoJSON LineString features. Per-feature properties present in the source include `name`, `slip_type`, `net_slip_rate`, `catalog_id`, `catalog_name`, `average_dip`, `average_rake`, `dip_dir`, `lower_seis_depth`, `upper_seis_depth`. Many fields are sparse — different constituent regional datasets fill in different subsets.
 
-**License:** CC-BY family (verify exact version against the GAF release used and comply with the attribution requirement).
+**File:** `geojson/gem_active_faults.geojson` from the repo's `master` branch. ~12.3 MB raw. ~13,500 LineString features.
 
-**Filter criterion:** Keep only features with Holocene-era movement. Implementation should match the GAF schema's actual field name and value vocabulary (e.g., `last_movement` field, value containing "Holocene" — verify against the file when downloading). Drop everything else. The filter is baked into a pre-processed GeoJSON; not a runtime toggle.
+**License:** CC-BY-SA. Both attribution and share-alike are required. Citation per the README: Styron, R. & Pagani, M. "The GEM Global Active Faults Database." *Earthquake Spectra* 36(1_suppl), Oct. 2020, pp. 160–180. doi:10.1177/8755293020944182.
+
+**Filter: exclude PB2002 catalog only.** GAF is already curated as "active fault traces of seismogenic concern" — the dataset itself IS the active-fault set. There is no reliable per-feature field for Holocene-vs-older filtering (`last_movement` is a calendar year and is sparse). However, GAF's README lists PB2002 (Bird 2003) as a constituent dataset — meaning GAF includes plate-boundary lines that we already render directly from `data/pb2002_steps_with_plates.geojson`. To avoid double-drawing plate boundaries, the prep step drops features whose `catalog_name` (case-insensitive) contains "PB2002". All other features pass through. Rely on visual subordination for density management.
 
 ## Architecture
 
@@ -27,25 +29,32 @@ The new layer follows the same pattern as the existing PB2002 plate-boundary lin
 
 ### Prep script (`scripts/prep-atlas-data.js`)
 
-New section after the existing PB2002 processing. Reads the raw GAF GeoJSON, applies the Holocene filter, writes the trimmed output. Pseudocode:
+New section after the existing PB2002 processing. Reads the raw GAF GeoJSON, drops PB2002-derived features (avoids duplication with the plate-boundary layer), and emits a trimmed GeoJSON with smaller property bags. Pseudocode:
 
 ```
-gafFeatures = readJson('data/<raw-gaf-source>.geojson').features
-holocene   = gafFeatures.filter(f => isHolocene(f.properties.last_movement))
-trimmed    = holocene.map(f => ({
+gafFeatures = readJson('data/gem_active_faults.geojson').features
+nonPB2002   = gafFeatures.filter(f =>
+                !((f.properties.catalog_name || '').toLowerCase().includes('pb2002')))
+trimmed     = nonPB2002.map(f => ({
+                type: 'Feature',
                 geometry: f.geometry,
-                properties: { name: f.properties.name, slip_type: f.properties.slip_type },
+                properties: {
+                    name:         f.properties.name         || '',
+                    slip_type:    f.properties.slip_type    || '',
+                    catalog_name: f.properties.catalog_name || '',
+                },
              }))
-writeJson('data/gem_gaf_holocene.geojson', { type: 'FeatureCollection', features: trimmed })
+writeJson('data/gem_active_faults_trimmed.geojson',
+          { type: 'FeatureCollection', features: trimmed })
 ```
 
-`isHolocene` matches GAF's actual vocabulary — define it after inspecting the source. Be tolerant of capitalization and combined values like "Active Holocene" or "Late Pleistocene–Holocene".
+The trimmer drops `average_dip`, `average_rake`, the slip-rate tuples, and the seis-depth fields. Keeps `name`, `slip_type`, `catalog_name` against possible future use (e.g., a "Faults colored by slip type" toggle, or a regional filter). Output should be ~30–50% the size of the raw source.
 
 ### Atlas integration (`src/atlas.js`)
 
 Add `'fault'` to the boundary group list. The existing `BOUNDARY_GROUPS` array already drives the per-class rendering, but the fault group has different defaults than the plate-boundary classes, so it's cleanest to handle it as a sibling group rather than a fifth `BOUNDARY_GROUPS` entry. Concrete approach:
 
-- Import the new GeoJSON: `import faultsJson from '../data/gem_gaf_holocene.geojson' with { type: 'json' };`
+- Import the new GeoJSON: `import faultsJson from '../data/gem_active_faults_trimmed.geojson' with { type: 'json' };`
 - Build line geometry for all fault features via the existing `buildLineGeometry(faultsJson.features, boundaryRadius)` helper.
 - Construct a `LineMaterial` with:
   - `color: new Color(atlasTuning.faultColor)`
@@ -93,14 +102,14 @@ Per the GEM license, the layer requires source attribution. Two surfaces:
 ## Data flow
 
 ```
-raw GAF GeoJSON           ──prep-atlas-data.js──▶  data/gem_gaf_holocene.geojson
-(committed in data/)                                (committed in data/)
+data/gem_active_faults.geojson    ──prep-atlas-data.js──▶  data/gem_active_faults_trimmed.geojson
+(raw, committed)                                            (trimmed, committed)
 
-data/gem_gaf_holocene.geojson  ──Bun JSON import──▶  src/atlas.js (loadAtlas)
+data/gem_active_faults_trimmed.geojson  ──Bun JSON import──▶  src/atlas.js (loadAtlas)
 
-src/atlas.js                   ──LineSegments2──▶   scene
-                                                         │
-src/atlasTuning.js (showFaults/faultColor/...)  ──listeners──▶ live update
+src/atlas.js                            ──LineSegments2──▶   scene
+                                                                  │
+src/atlasTuning.js (showFaults/faultColor/...)  ──listeners──▶  live update
 ```
 
 ## Default visual treatment
@@ -115,7 +124,7 @@ Decided values, settable from the GUI but reasonable starting points:
 
 - **Fault-type color classification.** `slip_type` is dropped from the render pipeline (still preserved in the trimmed GeoJSON in case a future iteration wants it). All faults use a single color.
 - **Hover/click interaction.** No raycasting against fault lines, no detail popup.
-- **Runtime filtering.** The Holocene filter is pre-baked into `data/gem_gaf_holocene.geojson`. No GUI control to switch between Holocene-only and all-faults at runtime.
+- **Data-side filtering.** All ~13,500 GAF features are rendered; visual subordination (low opacity, thin lines) carries the density. No GUI to filter by region, slip rate, or fault type.
 - **Dynamic re-fetch.** The raw GAF GeoJSON is committed at one point in time. Updating to a newer GAF release means re-downloading the source and re-running `bun run prep-data`.
 - **USGS Quaternary Fault and Fold Database.** Decided against this for now (the brainstorming session picked GAF for global coverage). May revisit later if denser US coverage is needed.
 
@@ -123,8 +132,9 @@ Decided values, settable from the GUI but reasonable starting points:
 
 This is a static-data + render-layer change. Verification is manual:
 
-1. **Build clean:** `bun run build` succeeds with the new GeoJSON imported.
-2. **Visual smoke test:**
+1. **Prep step succeeds:** `bun run prep-data` produces `data/gem_active_faults_trimmed.geojson`. Feature count should be slightly less than the raw count (a few hundred PB2002 features dropped). Small deviations from the expected ~13k–13.5k are OK if upstream GAF was updated.
+2. **Build clean:** `bun run build` succeeds with the new GeoJSON imported. Bundle size grows to ~12 MB; not a regression.
+3. **Visual smoke test:**
    - Faults appear on the map in dense regions (Tibet, Anatolia, the Apennines, Japan).
    - The New Madrid fault zone in the central US is visible.
    - Plate boundary lines (purple/orange/violet) clearly render on top of fault lines at intersections.
@@ -132,10 +142,11 @@ This is a static-data + render-layer change. Verification is manual:
    - Toggling `showFaults` hides/shows the fault layer cleanly.
    - Adjusting `faultColor`, `faultWidth`, `faultOpacity` updates live.
    - Adjusting the global `boundaryWidth` slider scales fault thickness proportionally (because `faultWidth` is a multiplier).
-3. **Localstorage compatibility:** Existing users with stored `eq-atlas-tuning` blobs that don't yet contain the four new keys still load cleanly (the existing load loop falls back to `defaults` for missing keys).
+4. **Localstorage compatibility:** Existing users with stored `eq-atlas-tuning` blobs that don't yet contain the four new keys still load cleanly (the existing load loop falls back to `defaults` for missing keys).
 
 ## Risks
 
-- **GAF schema may change between releases.** The filter logic depends on `last_movement` field semantics. Mitigation: validate the filter output count after running the prep script (e.g., expect ~3,000–6,000 features after Holocene filter, vs. ~13,500 in the full set). If the count is wildly off, the filter logic needs adjustment.
-- **License compliance.** The CC-BY family requires attribution and may have share-alike requirements depending on version. Mitigation: confirm the exact license version of the chosen GAF release before merging, and ensure the in-app + README attribution language matches the license's required wording.
-- **Visual crowding even with Holocene filter.** Tibet, Iran, the Aegean are extremely fault-dense even after filtering. Mitigation: the subordinated render (low opacity, thin lines) handles this — but if it still reads as a mess, the next iteration could introduce a slip-rate threshold or a region-based filter. Out of scope here; revisit if smoke test reveals it.
+- **License compliance — share-alike.** GAF is CC-BY-SA. Attribution alone isn't enough; derivative works must be released under the same license. The fault GeoJSON committed to this repo is a "share-alike" derivative. Practical implication: this codebase, or at minimum the `data/gem_active_faults_trimmed.geojson` file, should be redistributable under CC-BY-SA. If a future change wants to relicense or close-source, GAF would need to be removed.
+- **Bundle size.** ~10 MB of trimmed GeoJSON gets baked into the JS bundle (Bun's `with { type: 'json' }` import inlines the data). Bundle goes from ~1.6 MB to ~12 MB. Acceptable for a globe visualizer that already loads tile imagery, but worth tracking — `dev.js` HMR may slow.
+- **Render perf.** ~13,500 polylines, each with multiple coords, = potentially ~100k segments going through one `LineSegments2`. WebGL handles this fine, but it's the largest line-segment payload in the scene.
+- **Visual crowding.** Tibet, Iran, the Aegean, Japan are extremely fault-dense. Mitigation: the subordinated render (low opacity, thin lines, muted color) handles this. If smoke test shows it still reads as a mess, the next iteration could introduce a slip-rate threshold (parsing the `net_slip_rate` tuple) or hide non-`Petersen et al. 2014` US-only data; out of scope here.
