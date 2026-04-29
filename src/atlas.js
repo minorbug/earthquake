@@ -181,7 +181,7 @@ export function loadAtlas({ scene, radius }) {
         else otherFeatures.push(f);
     }
 
-    const boundaryGroups = [];
+    const lineGroups = [];
     for (const g of BOUNDARY_GROUPS) {
         const geo = buildLineGeometry(groupedFeatures[g.key], boundaryRadius);
         const mat = new LineMaterial({
@@ -198,7 +198,7 @@ export function loadAtlas({ scene, radius }) {
         const lines = new LineSegments2(geo, mat);
         lines.renderOrder = 2;
         scene.add(lines);
-        boundaryGroups.push({ key: g.key, colorKey: g.colorKey, alphaMult: g.alphaMult, material: mat, mesh: lines, features: groupedFeatures[g.key] });
+        lineGroups.push({ key: g.key, colorKey: g.colorKey, alphaMult: g.alphaMult, material: mat, mesh: lines, features: groupedFeatures[g.key] });
     }
     const otherGeo = buildLineGeometry(otherFeatures, boundaryRadius);
     const otherMat = new LineMaterial({
@@ -215,11 +215,15 @@ export function loadAtlas({ scene, radius }) {
     const otherLines = new LineSegments2(otherGeo, otherMat);
     otherLines.renderOrder = 2;
     scene.add(otherLines);
-    boundaryGroups.push({ key: 'other', colorKey: 'otherColor', alphaMult: 1.0, material: otherMat, mesh: otherLines, isOther: true, features: otherFeatures });
+    lineGroups.push({ key: 'other', colorKey: 'otherColor', alphaMult: 1.0, material: otherMat, mesh: otherLines, isOther: true, features: otherFeatures });
 
     // Faults (GEM Global Active Faults). Visually subordinated relative to
     // plate boundaries — single muted color, thinner, lower opacity, lower
     // renderOrder so plate boundaries paint over them at intersections.
+    //
+    // Linewidth floor of 0.05 is half the 0.1 floor used by plate boundaries,
+    // matching the 0.5× default of `faultWidth` so the floor itself preserves
+    // the subordination ratio at minimum width.
     const faultGeo = buildLineGeometry(faultsJson.features, boundaryRadius);
     const faultMat = new LineMaterial({
         color: new Color(atlasTuning.faultColor),
@@ -234,12 +238,12 @@ export function loadAtlas({ scene, radius }) {
     faultMesh.renderOrder = 1;
     faultMesh.visible = atlasTuning.showFaults;
     scene.add(faultMesh);
-    boundaryGroups.push({ key: 'fault', material: faultMat, mesh: faultMesh, isFault: true });
+    lineGroups.push({ key: 'fault', material: faultMat, mesh: faultMesh, isFault: true });
 
     // Keep LineMaterial resolution in sync with viewport size.
     function updateResolution() {
         const w = window.innerWidth, h = window.innerHeight;
-        for (const grp of boundaryGroups) {
+        for (const grp of lineGroups) {
             if (grp.material && grp.material.isLineMaterial) {
                 grp.material.resolution.set(w, h);
             }
@@ -257,7 +261,7 @@ export function loadAtlas({ scene, radius }) {
             crustMat.uniforms.landColor.value.set(t.oceanColor);
             crustMat.uniforms.antarcticaColor.value.set(t.oceanColor);
         }
-        for (const g of boundaryGroups) {
+        for (const g of lineGroups) {
             if (!g.material || !g.material.color) continue;   // guard: ShaderMaterial has no .color
             if (g.isFault) {
                 g.material.color.set(t.faultColor);
@@ -277,7 +281,7 @@ export function loadAtlas({ scene, radius }) {
     onAtlasColorChange(applyColors);
     onAtlasVisibilityChange((t) => {
         applyColors(t); // showLand affects land/antarctica uniform colors
-        for (const g of boundaryGroups) {
+        for (const g of lineGroups) {
             g.mesh.visible = g.isFault ? t.showFaults : t.showBoundaries;
         }
     });
@@ -285,5 +289,5 @@ export function loadAtlas({ scene, radius }) {
     // Diagnostic hook for headless inspection.
     if (typeof window !== 'undefined') window.__eqAtlasMaskCanvas = maskCanvas;
 
-    return { crust, boundaryGroups, maskCanvas, maskTexture: maskTex };
+    return { crust, lineGroups, maskCanvas, maskTexture: maskTex };
 }
