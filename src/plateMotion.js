@@ -168,7 +168,7 @@ export function loadPlateMotion({ scene, radius, atlas }) {
 
     populateArrowInstances(arrowMesh, samples, radius);
 
-    const plateWake = loadPlateWake({ scene, atlas, poleIndex });
+    const plateWake = loadPlateWake({ scene, atlas, poleIndex, radius });
 
     function applyFlowEnabled(enabled) {
         for (const grp of atlas.boundaryGroups) {

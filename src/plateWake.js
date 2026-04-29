@@ -176,9 +176,14 @@ const wakeFrag = /* glsl */`
     }
 `;
 
-export function loadPlateWake({ scene, atlas, poleIndex }) {
-    const surfaceRadius = atlas.boundaryGroups[0]?.mesh?.geometry?.boundingSphere?.radius
-        || (EARTH_RADIUS * 0.999);
+export function loadPlateWake({ scene, atlas, poleIndex, radius }) {
+    // Use the actual crust radius the caller passed in. The previous heuristic
+    // read boundingSphere.radius from the boundary geometry, but Three.js
+    // computes that from the BB *center* (not origin) — for ridge-only
+    // geometries the BB center is far off-origin and the bounding sphere
+    // radius came out ~250 km too large, putting the strips outside the
+    // crust shell where the opaque crust occluded them.
+    const surfaceRadius = (radius || EARTH_RADIUS) * 0.999;
 
     const wakeMeshes = [];
 

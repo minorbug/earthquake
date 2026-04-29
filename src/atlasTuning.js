@@ -88,7 +88,11 @@ function fireVisibility() {
 
 export function buildAtlasGui() {
     const gui = new GUI({ width: 300, title: 'Atlas' });
-    gui.domElement.style.marginTop = '8px';
+    // Default lil-gui placement is top-right; the marker-tuning panel
+    // (tuning.js) lives there. Move this one to top-left so they don't
+    // overlap or fight for cursor space.
+    gui.domElement.style.left  = '0';
+    gui.domElement.style.right = 'auto';
 
     const allControllers = [];
     const bindColor = (ctl) => { ctl.onChange(() => { save(); fireColors(); }); allControllers.push(ctl); return ctl; };
