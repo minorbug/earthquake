@@ -18,6 +18,11 @@ const defaults = {
     // Visibility
     showLand:        true,
     showBoundaries:  true,
+    // Faults (GEM Global Active Faults)
+    showFaults:    true,
+    faultColor:    '#7a5a3c',
+    faultWidth:    0.5,    // multiplier on boundaryWidth
+    faultOpacity:  0.4,
 };
 
 function loadStored() {
@@ -80,6 +85,12 @@ export function buildAtlasGui() {
 
     const fGeom = gui.addFolder('Geometry');
     bindColor(fGeom.add(atlasTuning, 'boundaryWidth', 0, 12, 0.1));
+
+    const fFaults = gui.addFolder('Faults');
+    bindVis  (fFaults.add(atlasTuning, 'showFaults'));
+    bindColor(fFaults.addColor(atlasTuning, 'faultColor'));
+    bindColor(fFaults.add(atlasTuning, 'faultWidth',   0, 2, 0.05));
+    bindColor(fFaults.add(atlasTuning, 'faultOpacity', 0, 1, 0.01));
 
     const fVis = gui.addFolder('Visibility');
     bindVis(fVis.add(atlasTuning, 'showLand'));
