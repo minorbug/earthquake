@@ -42,7 +42,7 @@ if (process.env.ENABLE_MAGMA_FLUID !== 'false') {
 let plateMotion = null;
 if (process.env.ENABLE_PLATE_MOTION !== 'false') {
     const { loadPlateMotion } = await import('./plateMotion.js');
-    plateMotion = loadPlateMotion({ scene, radius: CRUST_RADIUS, atlas });
+    plateMotion = loadPlateMotion({ scene, radius: CRUST_RADIUS, atlas, camera, renderer });
 }
 const postFX = buildPostFX({ renderer, scene, camera });
 window.addEventListener('resize', () => postFX.setSize(window.innerWidth, window.innerHeight));

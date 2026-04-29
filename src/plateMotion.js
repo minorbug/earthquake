@@ -19,13 +19,21 @@ import {
     Vector3,
     Matrix4,
     InstancedBufferAttribute,
+    Raycaster,
+    Vector2,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildPoleIndex, velocityAt, sampleBoundaries } from './plateMotionMath.js';
-import { loadPlateWake } from './plateWake.js';
 import { atlasTuning, onAtlasColorChange, onAtlasVisibilityChange } from './atlasTuning.js';
 import polesData from '../data/pb2002_poles.json' with { type: 'json' };
 import stepsData from '../data/pb2002_steps_with_plates.geojson' with { type: 'json' };
+
+// Hover behaviour constants.
+const HOVER_RADIUS_KM = 800;     // arrows within this distance of cursor activate
+const FADE_RATE       = 8;        // 1/sec — how fast active state lerps toward target
+const MARCH_FREQ_HZ   = 0.6;      // arrow forward-pulse frequency
+const MARCH_AMPLITUDE = 0.6;      // pulse fraction of arrow length
+const RAY_LINE_THRESHOLD_KM = 60; // raycast tolerance for hitting a thin line
 
 // SAMPLE_SPACING_DEG is read from atlasTuning.arrowDensity at module init;
 // density changes require a page reload (rebuilding instances live would
@@ -98,19 +106,66 @@ function arrowLatLngToXyz(lat, lng) {
     return { x: sp * Math.cos(theta), y: Math.cos(phi), z: sp * Math.sin(theta) };
 }
 
-function populateArrowInstances(arrowMesh, samples, surfaceRadius) {
+// Build a static per-instance state record: world position, velocity-tangent
+// direction (for marching), pre-computed orient basis, base length.
+// instanceMatrix is then a function of state + hover-active + march-phase, so
+// it can be rebuilt cheaply per frame without re-running velocityAt etc.
+function buildArrowStates(samples, surfaceRadius) {
+    const states = [];
+    const r = surfaceRadius * ARROW_RADIUS_FACTOR;
     for (let i = 0; i < samples.length; i++) {
         const s = samples[i];
         const r3d = arrowLatLngToXyz(s.lat, s.lng);
-        const lenA = compressLength(s.vA.magnitude) * atlasTuning.arrowScale;
-        const lenB = compressLength(s.vB.magnitude) * atlasTuning.arrowScale;
-        arrowMesh.setMatrixAt(i * 2,     arrowMatrix(r3d, s.vA.direction, lenA, surfaceRadius));
-        arrowMesh.setMatrixAt(i * 2 + 1, arrowMatrix(r3d, s.vB.direction, lenB, surfaceRadius));
+        const worldPos = new Vector3(r3d.x, r3d.y, r3d.z).multiplyScalar(r);
+        for (const v of [s.vA, s.vB]) {
+            const xAxis = new Vector3(v.direction.x, v.direction.y, v.direction.z).normalize();
+            const yAxis = new Vector3(r3d.x, r3d.y, r3d.z).normalize();
+            const zAxis = new Vector3().crossVectors(xAxis, yAxis).normalize();
+            xAxis.crossVectors(yAxis, zAxis).normalize();
+            const length = compressLength(v.magnitude) * atlasTuning.arrowScale;
+            states.push({
+                worldPos: worldPos.clone(),
+                xAxis: xAxis.clone(),
+                yAxis: yAxis.clone(),
+                zAxis: zAxis.clone(),
+                length,
+                active: 0,         // 0..1 hover ramp
+                phaseOffset: Math.random() * Math.PI * 2,  // stagger marches
+            });
+        }
     }
+    return states;
+}
+
+// Write a single arrow's instanceMatrix from its state + per-frame phase.
+// active=0 → zero-scale (invisible); active=1 → full size + marching pulse.
+const _tmpScale = new Matrix4();
+const _tmpBasis = new Matrix4();
+function writeArrowMatrix(arrowMesh, idx, st, t) {
+    if (st.active < 0.001) {
+        // Hidden: collapse to zero scale (no fragments rasterised).
+        arrowMesh.setMatrixAt(idx, _tmpScale.makeScale(0, 0, 0));
+        return;
+    }
+    // Marching pulse: arrow translates forward along its xAxis by a small
+    // sin-driven offset, scaled by activation so it's calm when fading in.
+    const pulse = Math.sin(t * MARCH_FREQ_HZ * Math.PI * 2 + st.phaseOffset);
+    const marchOffset = pulse * MARCH_AMPLITUDE * st.length * 0.5 * st.active;
+    const pos = st.worldPos.clone().addScaledVector(st.xAxis, marchOffset);
+    _tmpBasis.makeBasis(st.xAxis, st.yAxis, st.zAxis);
+    _tmpBasis.setPosition(pos);
+    const len = st.length * st.active;
+    _tmpScale.makeScale(len, len * 0.25, len * 0.25);
+    _tmpBasis.multiply(_tmpScale);
+    arrowMesh.setMatrixAt(idx, _tmpBasis);
+}
+
+function writeAllArrows(arrowMesh, states, t) {
+    for (let i = 0; i < states.length; i++) writeArrowMatrix(arrowMesh, i, states[i], t);
     arrowMesh.instanceMatrix.needsUpdate = true;
 }
 
-export function loadPlateMotion({ scene, radius, atlas }) {
+export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
     const poleIndex = buildPoleIndex(polesData.poles);
 
     // Convert geojson features to the shape sampleBoundaries expects.
@@ -166,9 +221,34 @@ export function loadPlateMotion({ scene, radius, atlas }) {
     }
     arrowMesh.instanceColor = new InstancedBufferAttribute(colorAttr, 3);
 
-    populateArrowInstances(arrowMesh, samples, radius);
+    const arrowStates = buildArrowStates(samples, radius);
+    writeAllArrows(arrowMesh, arrowStates, 0);
 
-    const plateWake = loadPlateWake({ scene, atlas, poleIndex, radius });
+    // ----- Hover detection -----
+    // Raycast against the boundary line meshes; on hit, mark arrows within
+    // HOVER_RADIUS_KM of the hit point as active. Per-frame ramp lerps each
+    // arrow's `active` toward 1 (target) or 0 (no target).
+    const raycaster = new Raycaster();
+    if (raycaster.params.Line2) raycaster.params.Line2.threshold = RAY_LINE_THRESHOLD_KM;
+    if (raycaster.params.Line)  raycaster.params.Line.threshold  = RAY_LINE_THRESHOLD_KM;
+    const ndc = new Vector2();
+    let hoverPoint = null;   // Vector3 in world space, or null
+    let lastT = 0;
+
+    if (typeof window !== 'undefined') {
+        const canvas = renderer ? renderer.domElement : window;
+        const onMove = (ev) => {
+            const x = ev.clientX, y = ev.clientY;
+            ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+            raycaster.setFromCamera(ndc, camera);
+            const meshes = atlas.boundaryGroups.map((g) => g.mesh);
+            const hits = raycaster.intersectObjects(meshes, false);
+            hoverPoint = hits.length > 0 ? hits[0].point.clone() : null;
+        };
+        const onLeave = () => { hoverPoint = null; };
+        canvas.addEventListener('mousemove', onMove);
+        canvas.addEventListener('mouseleave', onLeave);
+    }
 
     function applyFlowEnabled(enabled) {
         for (const grp of atlas.boundaryGroups) {
@@ -199,12 +279,25 @@ export function loadPlateMotion({ scene, radius, atlas }) {
     applyFlowOpacity();
 
     function update(t) {
-        plateWake.update(t);
+        const dt = lastT === 0 ? 0.016 : Math.max(0, Math.min(0.1, t - lastT));
+        lastT = t;
+        const radSq = HOVER_RADIUS_KM * HOVER_RADIUS_KM;
+        const lerpAmount = Math.min(1, FADE_RATE * dt);
+        for (const st of arrowStates) {
+            const target = (hoverPoint && st.worldPos.distanceToSquared(hoverPoint) < radSq) ? 1 : 0;
+            st.active += (target - st.active) * lerpAmount;
+        }
+        writeAllArrows(arrowMesh, arrowStates, t);
     }
 
     onAtlasColorChange((tn) => {
-        // atlas.js's own applyColors handles color/linewidth; we only need arrowScale here.
-        populateArrowInstances(arrowMesh, samples, radius);
+        // atlas.js's own applyColors handles color/linewidth. arrowScale change
+        // requires rebuilding the per-instance length on each state.
+        for (let i = 0; i < arrowStates.length; i++) {
+            const sIdx = Math.floor(i / 2);
+            const v = (i % 2 === 0) ? samples[sIdx].vA : samples[sIdx].vB;
+            arrowStates[i].length = compressLength(v.magnitude) * tn.arrowScale;
+        }
         applyFlowOpacity();
     });
     onAtlasVisibilityChange((tn) => {
