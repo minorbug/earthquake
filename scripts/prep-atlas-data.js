@@ -157,13 +157,20 @@ writeFileSync(resolve('data/pb2002_steps_with_plates.geojson'), JSON.stringify(s
 // GEM Global Active Faults: drop PB2002-derived features (already rendered
 // directly from PB2002), trim properties, round coordinates to match the
 // precision of the rest of our line data.
+//
+// GAF labels PB2002-derived features with catalog_name "Bird 2003" (the
+// citation), not the literal string "PB2002". Match either to be safe in
+// case upstream relabels.
 let gafDroppedPB2002 = 0;
 const faultsTrimmed = {
     type: 'FeatureCollection',
     features: faults.features
         .filter((f) => {
             const cn = (f.properties.catalog_name || '').toLowerCase();
-            if (cn.includes('pb2002')) { gafDroppedPB2002++; return false; }
+            if (cn.includes('pb2002') || cn.includes('bird 2003')) {
+                gafDroppedPB2002++;
+                return false;
+            }
             return true;
         })
         .map((f) => ({
