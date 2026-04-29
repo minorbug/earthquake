@@ -229,8 +229,10 @@ export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
     // HOVER_RADIUS_KM of the hit point as active. Per-frame ramp lerps each
     // arrow's `active` toward 1 (target) or 0 (no target).
     const raycaster = new Raycaster();
-    if (raycaster.params.Line2) raycaster.params.Line2.threshold = RAY_LINE_THRESHOLD_KM;
-    if (raycaster.params.Line)  raycaster.params.Line.threshold  = RAY_LINE_THRESHOLD_KM;
+    // Default Raycaster.params has no Line2 entry; LineSegments2 uses
+    // params.Line2.threshold for its hit tolerance. Set it explicitly.
+    raycaster.params.Line2 = { threshold: RAY_LINE_THRESHOLD_KM };
+    raycaster.params.Line  = { threshold: RAY_LINE_THRESHOLD_KM };
     const ndc = new Vector2();
     let hoverPoint = null;   // Vector3 in world space, or null
     let lastT = 0;
@@ -244,6 +246,7 @@ export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
             const meshes = atlas.boundaryGroups.map((g) => g.mesh);
             const hits = raycaster.intersectObjects(meshes, false);
             hoverPoint = hits.length > 0 ? hits[0].point.clone() : null;
+            window.__eqHover = { ndc: ndc.toArray(), hits: hits.length, hoverPoint: hoverPoint && hoverPoint.toArray() };
         };
         const onLeave = () => { hoverPoint = null; };
         canvas.addEventListener('mousemove', onMove);
