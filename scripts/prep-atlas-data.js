@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
 // scripts/prep-atlas-data.js
 //
-// Fetches Natural Earth land + admin-0 countries (for Antarctica) + PB2002
-// plate boundaries, simplifies coordinates to 2-decimal precision, splits
-// Antarctica from the land file, writes 3 GeoJSON files into data/.
+// Fetches Natural Earth land + admin-0 countries (for Antarctica), PB2002
+// plate boundaries, and GEM Global Active Faults; simplifies coordinates
+// to 2-decimal precision; splits Antarctica from the land file; drops
+// PB2002-derived faults from GAF (already rendered directly from PB2002);
+// writes 5 GeoJSON files into data/.
 //
 // Run once when refreshing source data:  bun run prep-data
 
