@@ -14,6 +14,7 @@ const SOURCES = {
     land:      'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson',
     countries: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson',
     boundaries:'https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_steps.json',
+    faults:    'https://raw.githubusercontent.com/GEMScienceTools/gem-global-active-faults/master/geojson/gem_active_faults.geojson',
 };
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -46,15 +47,17 @@ async function fetchJson(url) {
 
 mkdirSync('data', { recursive: true });
 
-console.log('Fetching 3 source files...');
-const [land, countries, boundaries] = await Promise.all([
+console.log('Fetching 4 source files...');
+const [land, countries, boundaries, faults] = await Promise.all([
     fetchJson(SOURCES.land),
     fetchJson(SOURCES.countries),
     fetchJson(SOURCES.boundaries),
+    fetchJson(SOURCES.faults),
 ]);
 console.log('  land:', land.features.length, 'features');
 console.log('  countries:', countries.features.length, 'features');
 console.log('  boundaries:', boundaries.features.length, 'features');
+console.log('  faults:', faults.features.length, 'features');
 
 // Antarctica from countries
 const antarcticaFeature = countries.features.find((f) => {
@@ -151,8 +154,34 @@ if (emptyPlateCount > 0) {
 }
 writeFileSync(resolve('data/pb2002_steps_with_plates.geojson'), JSON.stringify(stepsWithPlates));
 
-console.log('Wrote 4 files to data/.');
+// GEM Global Active Faults: drop PB2002-derived features (already rendered
+// directly from PB2002), trim properties, round coordinates to match the
+// precision of the rest of our line data.
+let gafDroppedPB2002 = 0;
+const faultsTrimmed = {
+    type: 'FeatureCollection',
+    features: faults.features
+        .filter((f) => {
+            const cn = (f.properties.catalog_name || '').toLowerCase();
+            if (cn.includes('pb2002')) { gafDroppedPB2002++; return false; }
+            return true;
+        })
+        .map((f) => ({
+            type: 'Feature',
+            properties: {
+                name:         f.properties.name         || '',
+                slip_type:    f.properties.slip_type    || '',
+                catalog_name: f.properties.catalog_name || '',
+            },
+            geometry: roundGeometry(f.geometry),
+        })),
+};
+console.log(`  GAF: dropped ${gafDroppedPB2002} PB2002-derived feature(s)`);
+writeFileSync(resolve('data/gem_active_faults_trimmed.geojson'), JSON.stringify(faultsTrimmed));
+
+console.log('Wrote 5 files to data/.');
 console.log('  ne_110m_land.geojson:', landFiltered.features.length, 'features');
 console.log('  ne_110m_antarctica.geojson: 1 feature');
 console.log('  pb2002_boundaries.geojson:', boundariesRounded.features.length, 'features');
 console.log('  pb2002_steps_with_plates.geojson:', stepsWithPlates.features.length, 'features');
+console.log('  gem_active_faults_trimmed.geojson:', faultsTrimmed.features.length, 'features');
