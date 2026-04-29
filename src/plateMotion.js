@@ -239,6 +239,16 @@ export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
 
     if (typeof window !== 'undefined') {
         const canvas = renderer ? renderer.domElement : window;
+
+        // Live debug overlay: tiny fixed panel that updates on every
+        // mousemove with cursor xy, ndc, hits count, hoverPoint, and
+        // active-arrow count. Lets you SEE what the raycaster is doing.
+        const dbg = document.createElement('div');
+        dbg.id = 'plateMotionDebug';
+        dbg.style.cssText = 'position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(0,0,0,.75);color:#9fe;font:11px/1.4 ui-monospace,monospace;padding:6px 10px;border-radius:4px;pointer-events:none;border:1px solid rgba(255,255,255,.15);white-space:pre;';
+        dbg.textContent = 'plateMotion: move mouse over a boundary line';
+        document.body.appendChild(dbg);
+
         const onMove = (ev) => {
             const x = ev.clientX, y = ev.clientY;
             ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
@@ -247,8 +257,24 @@ export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
             const hits = raycaster.intersectObjects(meshes, false);
             hoverPoint = hits.length > 0 ? hits[0].point.clone() : null;
             window.__eqHover = { ndc: ndc.toArray(), hits: hits.length, hoverPoint: hoverPoint && hoverPoint.toArray() };
+
+            // Count nearby arrows (target=1)
+            let nearby = 0;
+            if (hoverPoint) {
+                const radSq = HOVER_RADIUS_KM * HOVER_RADIUS_KM;
+                for (const st of arrowStates) {
+                    if (st.worldPos.distanceToSquared(hoverPoint) < radSq) nearby++;
+                }
+            }
+            const hpStr = hoverPoint
+                ? `(${hoverPoint.x.toFixed(0)}, ${hoverPoint.y.toFixed(0)}, ${hoverPoint.z.toFixed(0)})`
+                : 'null';
+            dbg.textContent =
+                `xy=(${x},${y})  ndc=(${ndc.x.toFixed(2)},${ndc.y.toFixed(2)})\n` +
+                `hits=${hits.length}  hoverPoint=${hpStr}\n` +
+                `nearby arrows (target=1): ${nearby} / ${arrowStates.length}`;
         };
-        const onLeave = () => { hoverPoint = null; };
+        const onLeave = () => { hoverPoint = null; dbg.textContent += '\n(mouseleave)'; };
         canvas.addEventListener('mousemove', onMove);
         canvas.addEventListener('mouseleave', onLeave);
     }
