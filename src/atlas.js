@@ -103,32 +103,25 @@ function buildLineGeometry(features, radiusKm) {
     return geo;
 }
 
-// ---- Crust shader: samples mask, branches color, adds magma rim glow ----
+// ---- Crust shader: samples mask, branches color ----
 const crustVert = /* glsl */`
     varying vec3 vN;
-    varying vec3 vWorldPos;
     void main() {
         vN = normalize(position);
-        vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
 `;
 
-// Core glow: when the surface normal is grazing the camera (limb of the
-// visible portion of the inner sphere), the inner core bleeds through.
-// Rim term = pow(1 - |dot(normal, view)|, coreFalloff). Heat-haze
-// distortion happens in screen-space (postFX.js), not in this shader.
+// Crust shader: sample the rasterized land/antarctica/ocean mask and emit
+// the corresponding tuning color. Branches on the category byte: ocean (0),
+// land (~85), antarctica (~170).
 const crustFrag = /* glsl */`
     precision highp float;
     uniform sampler2D mask;
     uniform vec3 oceanColor;
     uniform vec3 landColor;
     uniform vec3 antarcticaColor;
-    uniform vec3 coreColor;
-    uniform float coreIntensity;
-    uniform float coreFalloff;
     varying vec3 vN;
-    varying vec3 vWorldPos;
 
     void main() {
         float thetaDeg = degrees(atan(vN.z, vN.x));
@@ -139,16 +132,10 @@ const crustFrag = /* glsl */`
         float v = (90.0 - lat) / 180.0;
 
         float cat = texture2D(mask, vec2(u, v)).r;
-        vec3 base = oceanColor;
-        if (cat > 0.55) base = antarcticaColor;
-        else if (cat > 0.20) base = landColor;
+        vec3 color = oceanColor;
+        if (cat > 0.55) color = antarcticaColor;
+        else if (cat > 0.20) color = landColor;
 
-        vec3 worldNormal = normalize(vWorldPos);
-        vec3 viewDir = normalize(cameraPosition - vWorldPos);
-        float ndv = abs(dot(worldNormal, viewDir));
-        float rim = pow(1.0 - ndv, coreFalloff);
-
-        vec3 color = base + coreColor * rim * coreIntensity;
         gl_FragColor = vec4(color, 1.0);
     }
 `;
@@ -173,9 +160,6 @@ export function loadAtlas({ scene, radius }) {
             oceanColor:      { value: new Color(atlasTuning.oceanColor) },
             landColor:       { value: new Color(atlasTuning.showLand ? atlasTuning.landColor : atlasTuning.oceanColor) },
             antarcticaColor: { value: new Color(atlasTuning.showLand ? atlasTuning.antarcticaColor : atlasTuning.oceanColor) },
-            coreColor:       { value: new Color(atlasTuning.coreColor) },
-            coreIntensity:   { value: atlasTuning.coreIntensity },
-            coreFalloff:     { value: atlasTuning.coreFalloff },
         },
         vertexShader: crustVert,
         fragmentShader: crustFrag,
@@ -253,9 +237,6 @@ export function loadAtlas({ scene, radius }) {
             crustMat.uniforms.landColor.value.set(t.oceanColor);
             crustMat.uniforms.antarcticaColor.value.set(t.oceanColor);
         }
-        crustMat.uniforms.coreColor.value.set(t.coreColor);
-        crustMat.uniforms.coreIntensity.value = t.coreIntensity;
-        crustMat.uniforms.coreFalloff.value = t.coreFalloff;
         for (const g of boundaryGroups) {
             if (!g.material || !g.material.color) continue;   // guard: ShaderMaterial has no .color
             g.material.color.set(t[g.colorKey]);

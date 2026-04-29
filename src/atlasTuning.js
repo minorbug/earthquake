@@ -8,24 +8,6 @@ const defaults = {
     oceanColor:      '#0a1428',
     landColor:       '#3e5d8a',
     antarcticaColor: '#9aa8c5',
-    coreColor:       '#ff3008',
-    coreIntensity:   0.35,
-    coreFalloff:     2.0,
-    // Magma core (real 3D orb at origin)
-    coreEnabled:     true,
-    coreRadius:      4500,    // km. Camera sits at ~5800; this fills the lower viewport.
-    coreBrightness:  1.0,
-    coreSpeed:       1.0,     // animation rate
-    coreHotColor:    '#ffd060', // peaks of magma flow
-    coreCoolColor:   '#a01a08', // troughs
-    coreRimBoost:    0.6,     // fresnel rim brightness multiplier
-    // Magma volumetric fluid layer (Stam-style 2D sim + raymarched shell).
-    // Disabled at build time via `bun run build:no-fluid`.
-    fluidEnabled:    true,
-    fluidIntensity:  1.0,     // raymarcher emission master multiplier
-    fluidBuoyancy:   3.0,     // dye→velocity force; higher = faster rising plumes
-    fluidDecay:      0.32,    // dye dissipation per second
-    fluidSpawnRate:  3.2,     // average new hot spots per second
     ridgeColor:      '#d840ff', // OSR, CRB
     subColor:        '#6020c0', // OCB, CCB, SUB
     transformColor:  '#f0c060', // OTF, CTF
@@ -95,27 +77,6 @@ export function buildAtlasGui() {
     bindColor(fColors.addColor(atlasTuning, 'transformColor'));
     bindColor(fColors.addColor(atlasTuning, 'otherColor'));
     bindColor(fColors.add(atlasTuning, 'otherAlpha', 0, 1, 0.01));
-
-    const fCore = gui.addFolder('Core glow');
-    bindColor(fCore.addColor(atlasTuning, 'coreColor'));
-    bindColor(fCore.add(atlasTuning, 'coreIntensity', 0, 2, 0.01));
-    bindColor(fCore.add(atlasTuning, 'coreFalloff', 0.25, 4, 0.05).name('coreFalloff (lower = wider)'));
-
-    const fCoreOrb = gui.addFolder('Magma core');
-    bindVis(fCoreOrb.add(atlasTuning, 'coreEnabled'));
-    bindColor(fCoreOrb.add(atlasTuning, 'coreRadius', 500, 5000, 50));
-    bindColor(fCoreOrb.add(atlasTuning, 'coreBrightness', 0, 3, 0.01));
-    bindColor(fCoreOrb.add(atlasTuning, 'coreSpeed', 0, 3, 0.05));
-    bindColor(fCoreOrb.add(atlasTuning, 'coreRimBoost', 0, 2, 0.01));
-    bindColor(fCoreOrb.addColor(atlasTuning, 'coreHotColor'));
-    bindColor(fCoreOrb.addColor(atlasTuning, 'coreCoolColor'));
-
-    const fFluid = gui.addFolder('Magma fluid');
-    bindVis(fFluid.add(atlasTuning, 'fluidEnabled'));
-    bindColor(fFluid.add(atlasTuning, 'fluidIntensity', 0, 3, 0.05));
-    bindColor(fFluid.add(atlasTuning, 'fluidBuoyancy', 0, 6, 0.1));
-    bindColor(fFluid.add(atlasTuning, 'fluidDecay', 0.05, 1.0, 0.01));
-    bindColor(fFluid.add(atlasTuning, 'fluidSpawnRate', 0, 10, 0.1));
 
     const fGeom = gui.addFolder('Geometry');
     bindColor(fGeom.add(atlasTuning, 'boundaryWidth', 0, 12, 0.1));

@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "bun run dev.js",
     "build": "rm -rf dist && bun build ./index.html --outdir=dist --minify && cp -R img dist/img",
-    "build:no-fluid": "rm -rf dist && bun build ./index.html --outdir=dist --minify --define 'process.env.ENABLE_MAGMA_FLUID=\"false\"' && cp -R img dist/img",
     "prep-data": "bun run scripts/prep-atlas-data.js"
   },
   "dependencies": {
