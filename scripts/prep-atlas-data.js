@@ -105,7 +105,7 @@ const boundariesRounded = {
 };
 writeFileSync(resolve('data/pb2002_boundaries.geojson'), JSON.stringify(boundariesRounded));
 
-// Same step segments but with PlateA/PlateB preserved, for plateMotion.js.
+// Same step segments but with PlateA/PlateB preserved.
 // Source has plate pairs as PLATEBOUND (e.g. "AF-AN", "AU/PA", "AN\SA");
 // split on any separator to get the two plate codes. The separator itself
 // carries meaning: '/' and '\' mark subduction zones (direction = overriding

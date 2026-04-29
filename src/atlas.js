@@ -203,7 +203,7 @@ export function loadAtlas({ scene, radius }) {
             color: new Color(atlasTuning[g.colorKey]),
             linewidth: Math.max(0.1, atlasTuning.boundaryWidth),
             worldUnits: false,    // linewidth is in pixels — actually visible
-            dashed: false,        // solid lines by default; flowEnabled toggles dash on
+            dashed: false,        // solid lines
             dashSize: 30,         // pixels
             gapSize: 20,          // pixels
             transparent: true,
