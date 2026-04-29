@@ -40,16 +40,6 @@ const defaults = {
     // Visibility
     showLand:        true,
     showBoundaries:  true,
-    // Plate motion vectors layer (PB2002 Euler poles + flow shader).
-    plateMotionEnabled: true,
-    arrowsEnabled:      true,
-    flowEnabled:        false,   // dashes-along-boundaries animation; off by default (was distracting)
-    arrowDensity:       5.0,    // sample spacing in degrees of arc
-    arrowScale:         1.0,
-    arrowColor:         '#ffffff',
-    arrowThickness:     0.25,   // cross-section as fraction of length
-    flowSpeed:          1.0,
-    flowOpacity:        0.7,
 };
 
 function loadStored() {
@@ -135,17 +125,6 @@ export function buildAtlasGui() {
     bindColor(fFluid.add(atlasTuning, 'fluidBuoyancy', 0, 6, 0.1));
     bindColor(fFluid.add(atlasTuning, 'fluidDecay', 0.05, 1.0, 0.01));
     bindColor(fFluid.add(atlasTuning, 'fluidSpawnRate', 0, 10, 0.1));
-
-    const fPlate = gui.addFolder('Plate motion');
-    bindVis(fPlate.add(atlasTuning, 'plateMotionEnabled'));
-    bindVis(fPlate.add(atlasTuning, 'arrowsEnabled'));
-    bindVis(fPlate.add(atlasTuning, 'flowEnabled'));
-    bindColor(fPlate.add(atlasTuning, 'arrowDensity', 2, 15, 0.5));
-    bindColor(fPlate.add(atlasTuning, 'arrowScale',     0, 5, 0.05));
-    bindColor(fPlate.add(atlasTuning, 'arrowThickness', 0.05, 1.0, 0.01));
-    bindColor(fPlate.addColor(atlasTuning, 'arrowColor'));
-    bindColor(fPlate.add(atlasTuning, 'flowSpeed',    0, 4, 0.05));
-    bindColor(fPlate.add(atlasTuning, 'flowOpacity',  0, 1, 0.01));
 
     const fGeom = gui.addFolder('Geometry');
     bindColor(fGeom.add(atlasTuning, 'boundaryWidth', 0, 12, 0.1));

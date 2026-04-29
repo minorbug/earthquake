@@ -38,12 +38,6 @@ if (process.env.ENABLE_MAGMA_FLUID !== 'false') {
     const { loadCoreVolFluid } = await import('./coreVolFluid.js');
     volFluid = loadCoreVolFluid({ scene, renderer, camera });
 }
-// Plate motion vectors. Build-time-optional via process.env.ENABLE_PLATE_MOTION.
-let plateMotion = null;
-if (process.env.ENABLE_PLATE_MOTION !== 'false') {
-    const { loadPlateMotion } = await import('./plateMotion.js');
-    plateMotion = loadPlateMotion({ scene, radius: CRUST_RADIUS, atlas, camera, renderer });
-}
 const postFX = buildPostFX({ renderer, scene, camera });
 window.addEventListener('resize', () => postFX.setSize(window.innerWidth, window.innerHeight));
 
@@ -80,7 +74,6 @@ function animate() {
     updateUniforms(t);
     core.update(t);
     if (volFluid) volFluid.update(t);
-    if (plateMotion) plateMotion.update(t);
     postFX.update(t);
     postFX.composer.render();
 }
