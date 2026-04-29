@@ -22,6 +22,7 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { buildPoleIndex, velocityAt, sampleBoundaries } from './plateMotionMath.js';
+import { loadPlateWake } from './plateWake.js';
 import { atlasTuning, onAtlasColorChange, onAtlasVisibilityChange } from './atlasTuning.js';
 import polesData from '../data/pb2002_poles.json' with { type: 'json' };
 import stepsData from '../data/pb2002_steps_with_plates.geojson' with { type: 'json' };
@@ -167,25 +168,7 @@ export function loadPlateMotion({ scene, radius, atlas }) {
 
     populateArrowInstances(arrowMesh, samples, radius);
 
-    // Per-group flow speed = avg sqrt-compressed magnitude across each group's segments.
-    const groupFlowSpeeds = atlas.boundaryGroups.map((grp) => {
-        const features = grp.features || [];
-        if (features.length === 0) return 0;
-        let sum = 0, count = 0;
-        for (const f of features) {
-            const props = f.properties;
-            const coords = f.geometry.coordinates;
-            if (!coords || coords.length < 2) continue;
-            const [[lngA, latA], [lngB, latB]] = coords;
-            const v = velocityAt(poleIndex, props.PlateA, props.PlateB,
-                                 (latA + latB) / 2, (lngA + lngB) / 2);
-            if (v) {
-                sum += Math.sqrt(Math.max(0, v.magnitude) / MAG_CEILING_MM_YR);
-                count++;
-            }
-        }
-        return count > 0 ? sum / count : 0;
-    });
+    const plateWake = loadPlateWake({ scene, atlas, poleIndex });
 
     function applyFlowEnabled(enabled) {
         for (const grp of atlas.boundaryGroups) {
@@ -216,13 +199,7 @@ export function loadPlateMotion({ scene, radius, atlas }) {
     applyFlowOpacity();
 
     function update(t) {
-        const scale = atlasTuning.flowSpeed;
-        for (let i = 0; i < atlas.boundaryGroups.length; i++) {
-            const mat = atlas.boundaryGroups[i].material;
-            if (!mat || !('dashOffset' in mat)) continue;
-            // dashOffset advances time*speed*scale; negative so dashes flow forward.
-            mat.dashOffset = -t * groupFlowSpeeds[i] * scale * 200;
-        }
+        plateWake.update(t);
     }
 
     onAtlasColorChange((tn) => {
