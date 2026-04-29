@@ -155,7 +155,8 @@ function writeArrowMatrix(arrowMesh, idx, st, t) {
     _tmpBasis.makeBasis(st.xAxis, st.yAxis, st.zAxis);
     _tmpBasis.setPosition(pos);
     const len = st.length * st.active;
-    _tmpScale.makeScale(len, len * 0.25, len * 0.25);
+    const cross = len * atlasTuning.arrowThickness;
+    _tmpScale.makeScale(len, cross, cross);
     _tmpBasis.multiply(_tmpScale);
     arrowMesh.setMatrixAt(idx, _tmpBasis);
 }
@@ -208,17 +209,20 @@ export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
     arrowMesh.renderOrder = 3;
     scene.add(arrowMesh);
 
-    // Per-instance color attribute.
+    // Per-instance color: master color from atlasTuning.arrowColor, applied
+    // uniformly to every instance. Class-coded boundary lines already convey
+    // type; the arrow color is now a single user-tunable accent.
     const colorAttr = new Float32Array(totalArrows * 3);
-    for (let i = 0; i < samples.length; i++) {
-        const c = new Color(TYPE_COLORS[samples[i].type] ?? DEFAULT_COLOR);
-        colorAttr[(i * 2) * 3 + 0] = c.r;
-        colorAttr[(i * 2) * 3 + 1] = c.g;
-        colorAttr[(i * 2) * 3 + 2] = c.b;
-        colorAttr[(i * 2 + 1) * 3 + 0] = c.r;
-        colorAttr[(i * 2 + 1) * 3 + 1] = c.g;
-        colorAttr[(i * 2 + 1) * 3 + 2] = c.b;
+    function repaintArrows() {
+        const c = new Color(atlasTuning.arrowColor);
+        for (let i = 0; i < totalArrows; i++) {
+            colorAttr[i * 3 + 0] = c.r;
+            colorAttr[i * 3 + 1] = c.g;
+            colorAttr[i * 3 + 2] = c.b;
+        }
+        if (arrowMesh.instanceColor) arrowMesh.instanceColor.needsUpdate = true;
     }
+    repaintArrows();
     arrowMesh.instanceColor = new InstancedBufferAttribute(colorAttr, 3);
 
     const arrowStates = buildArrowStates(samples, radius);
@@ -320,13 +324,13 @@ export function loadPlateMotion({ scene, radius, atlas, camera, renderer }) {
     }
 
     onAtlasColorChange((tn) => {
-        // atlas.js's own applyColors handles color/linewidth. arrowScale change
-        // requires rebuilding the per-instance length on each state.
+        // atlas.js's own applyColors handles boundary color/linewidth.
         for (let i = 0; i < arrowStates.length; i++) {
             const sIdx = Math.floor(i / 2);
             const v = (i % 2 === 0) ? samples[sIdx].vA : samples[sIdx].vB;
             arrowStates[i].length = compressLength(v.magnitude) * tn.arrowScale;
         }
+        repaintArrows();
         applyFlowOpacity();
     });
     onAtlasVisibilityChange((tn) => {

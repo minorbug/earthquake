@@ -46,6 +46,8 @@ const defaults = {
     flowEnabled:        false,   // dashes-along-boundaries animation; off by default (was distracting)
     arrowDensity:       5.0,    // sample spacing in degrees of arc
     arrowScale:         1.0,
+    arrowColor:         '#ffffff',
+    arrowThickness:     0.25,   // cross-section as fraction of length
     flowSpeed:          1.0,
     flowOpacity:        0.7,
 };
@@ -139,7 +141,9 @@ export function buildAtlasGui() {
     bindVis(fPlate.add(atlasTuning, 'arrowsEnabled'));
     bindVis(fPlate.add(atlasTuning, 'flowEnabled'));
     bindColor(fPlate.add(atlasTuning, 'arrowDensity', 2, 15, 0.5));
-    bindColor(fPlate.add(atlasTuning, 'arrowScale',   0, 3, 0.05));
+    bindColor(fPlate.add(atlasTuning, 'arrowScale',     0, 5, 0.05));
+    bindColor(fPlate.add(atlasTuning, 'arrowThickness', 0.05, 1.0, 0.01));
+    bindColor(fPlate.addColor(atlasTuning, 'arrowColor'));
     bindColor(fPlate.add(atlasTuning, 'flowSpeed',    0, 4, 0.05));
     bindColor(fPlate.add(atlasTuning, 'flowOpacity',  0, 1, 0.01));
 
