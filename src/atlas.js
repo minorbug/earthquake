@@ -24,6 +24,7 @@ import { atlasTuning, onAtlasColorChange, onAtlasVisibilityChange } from './atla
 import landJson from '../data/ne_110m_land.geojson' with { type: 'json' };
 import antarcticaJson from '../data/ne_110m_antarctica.geojson' with { type: 'json' };
 import boundariesJson from '../data/pb2002_steps_with_plates.geojson' with { type: 'json' };
+import faultsJson from '../data/gem_active_faults_trimmed.geojson' with { type: 'json' };
 
 // Must match feed.js's geoToVec3 internal constant.
 const TEXTURE_EDGE_LNG = -180.806168;
@@ -216,6 +217,25 @@ export function loadAtlas({ scene, radius }) {
     scene.add(otherLines);
     boundaryGroups.push({ key: 'other', colorKey: 'otherColor', alphaMult: 1.0, material: otherMat, mesh: otherLines, isOther: true, features: otherFeatures });
 
+    // Faults (GEM Global Active Faults). Visually subordinated relative to
+    // plate boundaries — single muted color, thinner, lower opacity, lower
+    // renderOrder so plate boundaries paint over them at intersections.
+    const faultGeo = buildLineGeometry(faultsJson.features, boundaryRadius);
+    const faultMat = new LineMaterial({
+        color: new Color(atlasTuning.faultColor),
+        linewidth: Math.max(0.05, atlasTuning.faultWidth * atlasTuning.boundaryWidth),
+        worldUnits: false,
+        dashed: false,
+        transparent: true,
+        opacity: atlasTuning.faultOpacity,
+    });
+    faultMat.resolution.set(window.innerWidth, window.innerHeight);
+    const faultMesh = new LineSegments2(faultGeo, faultMat);
+    faultMesh.renderOrder = 1;
+    faultMesh.visible = atlasTuning.showFaults;
+    scene.add(faultMesh);
+    boundaryGroups.push({ key: 'fault', material: faultMat, mesh: faultMesh, isFault: true });
+
     // Keep LineMaterial resolution in sync with viewport size.
     function updateResolution() {
         const w = window.innerWidth, h = window.innerHeight;
@@ -239,6 +259,12 @@ export function loadAtlas({ scene, radius }) {
         }
         for (const g of boundaryGroups) {
             if (!g.material || !g.material.color) continue;   // guard: ShaderMaterial has no .color
+            if (g.isFault) {
+                g.material.color.set(t.faultColor);
+                g.material.opacity   = Math.min(1, t.faultOpacity);
+                g.material.linewidth = Math.max(0.05, t.faultWidth * t.boundaryWidth);
+                continue;
+            }
             g.material.color.set(t[g.colorKey]);
             if (g.isOther) {
                 g.material.opacity = Math.min(1, t.otherAlpha);
@@ -251,7 +277,9 @@ export function loadAtlas({ scene, radius }) {
     onAtlasColorChange(applyColors);
     onAtlasVisibilityChange((t) => {
         applyColors(t); // showLand affects land/antarctica uniform colors
-        for (const g of boundaryGroups) g.mesh.visible = t.showBoundaries;
+        for (const g of boundaryGroups) {
+            g.mesh.visible = g.isFault ? t.showFaults : t.showBoundaries;
+        }
     });
 
     // Diagnostic hook for headless inspection.
