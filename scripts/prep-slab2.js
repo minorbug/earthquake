@@ -16,12 +16,11 @@ import { resolve } from 'node:path';
 const PARENT_ID = '5aa1b00ee4b0b1c392e86467';
 const SB_BASE = 'https://www.sciencebase.gov/catalog';
 
-// Depths we want to render (km). The Slab2 contour files use 20 km intervals.
-// Keep every 20 km step from 20–700 km (the full range across all zones).
-// The render layer further sub-samples for display at 100 km intervals if desired.
-const KEEP_DEPTHS = new Set(
-    Array.from({ length: 35 }, (_, i) => (i + 1) * 20) // 20, 40, 60, … 700
-);
+// Depths we want to render (km). The spec specified [50, 100, 200, ..., 700]
+// but Slab2 contour files use 20 km intervals — 50 km isn't in the data.
+// Use 40 km as the shallow stand-in (closest available to 50). Final set:
+// 8 depths, with shallow emphasis preserved.
+const KEEP_DEPTHS = new Set([40, 100, 200, 300, 400, 500, 600, 700]);
 
 const round2 = (n) => Math.round(n * 100) / 100;
 

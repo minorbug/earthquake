@@ -35,7 +35,7 @@ The release also contains depth grids (`.grd`, NetCDF), clipping masks (`.csv`),
 
 ## Filter
 
-Keep only the 8 chosen depths: **50, 100, 200, 300, 400, 500, 600, 700 km**. Drop strike and dip contours. Drop depths outside this set.
+Keep only the 8 chosen depths: **40, 100, 200, 300, 400, 500, 600, 700 km**. (Brainstorm picked 50 km for the shallow emphasis, but Slab2's contour files use 20 km intervals — 50 km isn't in the data; 40 km is the closest substitute.) Drop strike and dip contours. Drop depths outside this set.
 
 Also during prep, split any segment crossing the antimeridian (where `|Δlon| > 180°` between consecutive points) into two segments. Tonga, Kermadec, and the Aleutians cross the dateline; without splitting, those segments draw as horizontal sweeps across the entire globe.
 
@@ -105,7 +105,7 @@ src/main.js                                   (modified)
 
 **Render order = 1**, same as the fault layer. Plate boundaries (renderOrder = 2) paint over slabs at intersections; markers and the rest sit at default 0.
 
-**Geometry positioning.** Each (lon, lat) at depth `d` is mapped onto a sphere at radius `CRUST_RADIUS - d` (both in km). With `CRUST_RADIUS = 6367` (the existing constant from `scene.js`), the 50 km contour sits at radius `6317`, the 700 km contour at `5667`. The deep contours pass through the camera's orbital distance from origin (~5800 km) — but the camera orbits via `camGroup`, so the camera position and contour positions never collide; standard depth-buffer rendering handles ordering.
+**Geometry positioning.** Each (lon, lat) at depth `d` is mapped onto a sphere at radius `CRUST_RADIUS - d` (both in km). With `CRUST_RADIUS = 6367` (the existing constant from `scene.js`), the 40 km contour sits at radius `6327`, the 700 km contour at `5667`. The deep contours pass through the camera's orbital distance from origin (~5800 km) — but the camera orbits via `camGroup`, so the camera position and contour positions never collide; standard depth-buffer rendering handles ordering.
 
 ## Color strategies
 

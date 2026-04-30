@@ -64,7 +64,7 @@ const PARENT_ID = '5aa1b00ee4b0b1c392e86467';
 const SB_BASE = 'https://www.sciencebase.gov/catalog';
 
 // Depths we want to render. Drop everything else from the contour files.
-const KEEP_DEPTHS = new Set([50, 100, 200, 300, 400, 500, 600, 700]);
+const KEEP_DEPTHS = new Set([40, 100, 200, 300, 400, 500, 600, 700]);
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -247,7 +247,7 @@ bun -e 'const j=JSON.parse(await Bun.file("data/slab2_contours.geojson").text())
 Expected:
 - File size ~1–2 MB.
 - Feature count in the low thousands (1500–3500 typical).
-- `depths:` should print exactly `[ 50, 100, 200, 300, 400, 500, 600, 700 ]`.
+- `depths:` should print exactly `[ 40, 100, 200, 300, 400, 500, 600, 700 ]`.
 - `zones:` should print 23–27 (some overturning zones may legitimately be skipped) with codes like `alu, cal, cas, cot, hal, hel, him, hin, izu, ker, kur, mak, man, mex, mue, pam, phi, png, puy, ryu, sam, sco, sol, sul, sum, van`.
 
 If any depth is outside the expected set, STOP — the regex extracted depths incorrectly.
@@ -296,14 +296,14 @@ import { Color } from 'three';
 
 // The 8 depth contours we render, in km. The depth values must be a subset
 // of what's in data/slab2_contours.geojson (set by scripts/prep-slab2.js).
-export const DEPTHS = [50, 100, 200, 300, 400, 500, 600, 700];
+export const DEPTHS = [40, 100, 200, 300, 400, 500, 600, 700];
 
 // ---- Strategy: viridis (default) -----------------------------------------
 // 8-stop sample from the viridis colormap, perceptually uniform purple→yellow.
 // Hex values picked to roughly match the canonical viridis at 8 evenly spaced
 // positions in [0,1].
 const VIRIDIS_STOPS = [
-    '#440154', // 50 km (shallowest)
+    '#440154', // 40 km (shallowest)
     '#482878',
     '#3e4a89',
     '#31688e',
@@ -328,7 +328,7 @@ function viridis(depthKm) {
 // with the existing earthquake markers (which use ember/mid/cyan via
 // tuning.emberHex/midHex/cyanHex).
 const MARKER_EXTENDED_STOPS = [
-    '#ffeebb', // 50  — ember (shallow)
+    '#ffeebb', // 40  — ember (shallow)
     '#ff7733', // 100 — mid
     '#22ccff', // 200 — cyan
     '#3344aa', // 300 — deep blue
