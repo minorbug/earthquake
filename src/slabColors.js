@@ -2,8 +2,11 @@
 //
 // Each strategy maps a depth-in-km to a THREE.Color. The active strategy
 // is named in atlasTuning.slabColorStrategy and looked up by name from
-// `colorStrategies`. Adding a new strategy = adding one entry to the
-// registry; the GUI dropdown auto-populates from Object.keys(colorStrategies).
+// `colorStrategies`. Adding a new strategy requires TWO edits:
+//   1. Add the function + register it in `colorStrategies` here.
+//   2. Add the strategy name to the dropdown options array in
+//      atlasTuning.js's "Slabs (Slab2)" folder. lil-gui dropdowns aren't
+//      reactive — the options list is captured at folder-build time.
 import { Color } from 'three';
 
 // The 8 depth contours we render, in km. The depth values must be a subset
