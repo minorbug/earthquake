@@ -1,13 +1,23 @@
 // src/slabColors.js — Slab2 color Strategy registry.
 //
-// Each strategy maps a depth-in-km to a THREE.Color. The active strategy
-// is named in atlasTuning.slabColorStrategy and looked up by name from
-// `colorStrategies`. Adding a new strategy requires TWO edits:
-//   1. Add the function + register it in `colorStrategies` here.
-//   2. Add the strategy name to the dropdown options array in
+// Two parallel APIs:
+//   - colorStrategies[name](depthKm) — discrete per-stop, used by the
+//     contour ring layer (8 fixed depths).
+//   - continuousColorFromDepth(depthKm, name) — smooth lerp between
+//     adjacent stops, used by the surface mesh layer (continuous depth).
+//
+// Adding a new strategy requires THREE edits:
+//   1. Define the stops array.
+//   2. Register the discrete fn in `colorStrategies`.
+//   3. Register the stops array in `STOPS_BY_NAME`.
+//   4. Add the strategy name to the dropdown options array in
 //      atlasTuning.js's "Slabs (Slab2)" folder. lil-gui dropdowns aren't
 //      reactive — the options list is captured at folder-build time.
 import { Color } from 'three';
+
+// Max depth for the continuous lerp's normalization. Matches the contour
+// layer's deepest depth and the surface prep script's MAX_DEPTH_KM.
+const MAX_DEPTH_KM = 700;
 
 // The 8 depth contours we render, in km. The depth values must be a subset
 // of what's in data/slab2_contours.geojson (set by scripts/prep-slab2.js).
@@ -75,4 +85,31 @@ export const colorStrategies = {
 // Resolve a strategy by name with safe fallback.
 export function resolveStrategy(name) {
     return colorStrategies[name] || colorStrategies.viridis;
+}
+
+// ---- Continuous variant for the surface layer ---------------------------
+// Maps each strategy's stops array by name. Used by continuousColorFromDepth
+// so surfaces can lerp smoothly across depth instead of snapping to one of
+// the 8 discrete contour colors. Keep in sync with `colorStrategies`.
+const STOPS_BY_NAME = {
+    viridis:        VIRIDIS_STOPS,
+    markerExtended: MARKER_EXTENDED_STOPS,
+    single:         ['#7a5a3c', '#7a5a3c'],   // flat — lerp is a no-op
+};
+
+// Smoothly interpolate between adjacent stops of the named strategy
+// based on (depthKm / MAX_DEPTH_KM). Falls back to viridis on unknown
+// names. Returns a fresh THREE.Color (callers commonly read .r/.g/.b).
+const _tmpA = new Color();
+const _tmpB = new Color();
+export function continuousColorFromDepth(depthKm, strategyName) {
+    const stops = STOPS_BY_NAME[strategyName] || VIRIDIS_STOPS;
+    const tNorm = Math.max(0, Math.min(1, depthKm / MAX_DEPTH_KM));
+    const t = tNorm * (stops.length - 1);
+    const i = Math.min(stops.length - 2, Math.floor(t));
+    const frac = t - i;
+    _tmpA.set(stops[i]);
+    _tmpB.set(stops[i + 1]);
+    // Return a NEW color; _tmp* are reused next call.
+    return _tmpA.clone().lerp(_tmpB, frac);
 }

@@ -11,6 +11,7 @@
       },
       "devDependencies": {
         "@types/three": "^0.184.0",
+        "h5wasm": "^0.10.1",
         "playwright": "^1.59.1",
       },
     },
@@ -31,6 +32,8 @@
     "fflate": ["fflate@0.8.2", "", {}, "sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A=="],
 
     "fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
+
+    "h5wasm": ["h5wasm@0.10.1", "", {}, "sha512-VxKLoNcPmn/4j6wWuf81gRGzcNjW1aHKtNgRp6ZBeYd6RoWmN3tk5HB6E3nPYsc3YhGT+o07xz1tK6wdMuPMiw=="],
 
     "lil-gui": ["lil-gui@0.21.0", "", {}, "sha512-tpvxN7v1GvE/Tv+GRopfOp0W7fVEjF4PltkuX8vOCIfim22rD1ztvfkoEMcv9lzQeuNUSeIrUmUjBwmlW/oUew=="],
 

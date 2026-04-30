@@ -15,7 +15,7 @@ Bun.serve({
         const path = url.pathname;
 
         // Serve static files from project root for these prefixes
-        if (path.startsWith('/img/') || path === '/favicon.ico') {
+        if (path.startsWith('/img/') || path.startsWith('/data/') || path === '/favicon.ico') {
             const file = Bun.file('.' + path);
             if (await file.exists()) return new Response(file);
         }

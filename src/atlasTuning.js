@@ -23,11 +23,14 @@ const defaults = {
     faultColor:    '#7a5a3c',
     faultWidth:    0.5,    // multiplier on boundaryWidth
     faultOpacity:  0.4,
-    // Slabs (USGS Slab2 depth contours)
-    showSlabs:          true,
-    slabWidth:          0.5,    // multiplier on boundaryWidth
+    // Slabs (USGS Slab2)
+    // Surfaces are the primary visual; ring overlay defaults OFF.
+    showSlabSurfaces:   true,
+    slabSurfaceOpacity: 0.3,
+    slabColorStrategy:  'viridis',  // shared by surfaces + rings
+    showSlabs:          false,      // contour ring overlay (was true before surfaces shipped)
+    slabWidth:          0.5,        // multiplier on boundaryWidth
     slabOpacity:        0.6,
-    slabColorStrategy:  'viridis',
 };
 
 function loadStored() {
@@ -98,10 +101,15 @@ export function buildAtlasGui() {
     bindColor(fFaults.add(atlasTuning, 'faultOpacity', 0, 1, 0.01));
 
     const fSlabs = gui.addFolder('Slabs (Slab2)');
-    bindVis  (fSlabs.add(atlasTuning, 'showSlabs'));
+    // Surfaces (primary)
+    bindVis  (fSlabs.add(atlasTuning, 'showSlabSurfaces'));
+    bindColor(fSlabs.add(atlasTuning, 'slabSurfaceOpacity', 0, 1, 0.01));
+    // Shared color strategy — affects both surfaces and rings.
+    bindColor(fSlabs.add(atlasTuning, 'slabColorStrategy', ['viridis', 'markerExtended', 'single']));
+    // Contour ring overlay (optional, default OFF)
+    bindVis  (fSlabs.add(atlasTuning, 'showSlabs').name('showSlabRings'));
     bindColor(fSlabs.add(atlasTuning, 'slabWidth',   0, 2, 0.05));
     bindColor(fSlabs.add(atlasTuning, 'slabOpacity', 0, 1, 0.01));
-    bindColor(fSlabs.add(atlasTuning, 'slabColorStrategy', ['viridis', 'markerExtended', 'single']));
 
     const fVis = gui.addFolder('Visibility');
     bindVis(fVis.add(atlasTuning, 'showLand'));

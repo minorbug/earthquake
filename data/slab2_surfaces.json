@@ -1,0 +1,273 @@
+{
+  "format": "slab2-surfaces-v1",
+  "stride": 2,
+  "maxDepthKm": 700,
+  "crustRadiusKm": 6367,
+  "totalVertices": 255235,
+  "totalIndices": 1478862,
+  "layout": {
+    "positions": {
+      "byteOffset": 0,
+      "byteLength": 3062820,
+      "type": "Float32",
+      "count": 765705
+    },
+    "depths": {
+      "byteOffset": 3062820,
+      "byteLength": 1020940,
+      "type": "Float32",
+      "count": 255235
+    },
+    "indices": {
+      "byteOffset": 4083760,
+      "byteLength": 5915448,
+      "type": "Uint32",
+      "count": 1478862
+    }
+  },
+  "zones": [
+    {
+      "zone": "cas",
+      "vertexOffset": 0,
+      "vertexCount": 6657,
+      "indexOffset": 0,
+      "indexCount": 38568,
+      "depthMin": 4.9,
+      "depthMax": 437
+    },
+    {
+      "zone": "png",
+      "vertexOffset": 6657,
+      "vertexCount": 3836,
+      "indexOffset": 38568,
+      "indexCount": 22032,
+      "depthMin": 5.6,
+      "depthMax": 173
+    },
+    {
+      "zone": "sum",
+      "vertexOffset": 10493,
+      "vertexCount": 28888,
+      "indexOffset": 60600,
+      "indexCount": 167874,
+      "depthMin": 3.2,
+      "depthMax": 672.2
+    },
+    {
+      "zone": "alu",
+      "vertexOffset": 39381,
+      "vertexCount": 17601,
+      "indexOffset": 228474,
+      "indexCount": 100944,
+      "depthMin": 1.4,
+      "depthMax": 265.9
+    },
+    {
+      "zone": "cam",
+      "vertexOffset": 56982,
+      "vertexCount": 7723,
+      "indexOffset": 329418,
+      "indexCount": 44010,
+      "depthMin": 4,
+      "depthMax": 393.8
+    },
+    {
+      "zone": "hal",
+      "vertexOffset": 64705,
+      "vertexCount": 5625,
+      "indexOffset": 373428,
+      "indexCount": 32406,
+      "depthMin": 33.4,
+      "depthMax": 675.5
+    },
+    {
+      "zone": "pam",
+      "vertexOffset": 70330,
+      "vertexCount": 6013,
+      "indexOffset": 405834,
+      "indexCount": 34866,
+      "depthMin": 4.3,
+      "depthMax": 236
+    },
+    {
+      "zone": "sam",
+      "vertexOffset": 76343,
+      "vertexCount": 51611,
+      "indexOffset": 440700,
+      "indexCount": 304410,
+      "depthMin": 5.6,
+      "depthMax": 670.5
+    },
+    {
+      "zone": "car",
+      "vertexOffset": 127954,
+      "vertexCount": 5342,
+      "indexOffset": 745110,
+      "indexCount": 30522,
+      "depthMin": 6.9,
+      "depthMax": 180.5
+    },
+    {
+      "zone": "hel",
+      "vertexOffset": 133296,
+      "vertexCount": 7783,
+      "indexOffset": 775632,
+      "indexCount": 44994,
+      "depthMin": 6.6,
+      "depthMax": 444
+    },
+    {
+      "zone": "izu",
+      "vertexOffset": 141079,
+      "vertexCount": 10117,
+      "indexOffset": 820626,
+      "indexCount": 58176,
+      "depthMin": 5.7,
+      "depthMax": 590.5
+    },
+    {
+      "zone": "ker",
+      "vertexOffset": 151196,
+      "vertexCount": 17373,
+      "indexOffset": 878802,
+      "indexCount": 101142,
+      "depthMin": 4.8,
+      "depthMax": 697.5
+    },
+    {
+      "zone": "hin",
+      "vertexOffset": 168569,
+      "vertexCount": 2755,
+      "indexOffset": 979944,
+      "indexCount": 15708,
+      "depthMin": 21.3,
+      "depthMax": 337.1
+    },
+    {
+      "zone": "mak",
+      "vertexOffset": 171324,
+      "vertexCount": 5815,
+      "indexOffset": 995652,
+      "indexCount": 33792,
+      "depthMin": 3,
+      "depthMax": 155.7
+    },
+    {
+      "zone": "man",
+      "vertexOffset": 177139,
+      "vertexCount": 12268,
+      "indexOffset": 1029444,
+      "indexCount": 71568,
+      "depthMin": 2.9,
+      "depthMax": 170.7
+    },
+    {
+      "zone": "sco",
+      "vertexOffset": 189407,
+      "vertexCount": 2185,
+      "indexOffset": 1101012,
+      "indexCount": 12300,
+      "depthMin": 7.3,
+      "depthMax": 303.8
+    },
+    {
+      "zone": "sul",
+      "vertexOffset": 191592,
+      "vertexCount": 1131,
+      "indexOffset": 1113312,
+      "indexCount": 6288,
+      "depthMin": 5.8,
+      "depthMax": 255.6
+    },
+    {
+      "zone": "mue",
+      "vertexOffset": 192723,
+      "vertexCount": 3599,
+      "indexOffset": 1119600,
+      "indexCount": 20412,
+      "depthMin": -2.7,
+      "depthMax": 123.8
+    },
+    {
+      "zone": "phi",
+      "vertexOffset": 196322,
+      "vertexCount": 2106,
+      "indexOffset": 1140012,
+      "indexCount": 11196,
+      "depthMin": 6.3,
+      "depthMax": 228.5
+    },
+    {
+      "zone": "ryu",
+      "vertexOffset": 198428,
+      "vertexCount": 8418,
+      "indexOffset": 1151208,
+      "indexCount": 48480,
+      "depthMin": 4.5,
+      "depthMax": 396.2
+    },
+    {
+      "zone": "puy",
+      "vertexOffset": 206846,
+      "vertexCount": 4700,
+      "indexOffset": 1199688,
+      "indexCount": 26616,
+      "depthMin": 3.3,
+      "depthMax": 163.6
+    },
+    {
+      "zone": "sol",
+      "vertexOffset": 211546,
+      "vertexCount": 4622,
+      "indexOffset": 1226304,
+      "indexCount": 25632,
+      "depthMin": 4.9,
+      "depthMax": 613.4
+    },
+    {
+      "zone": "cal",
+      "vertexOffset": 216168,
+      "vertexCount": 2450,
+      "indexOffset": 1251936,
+      "indexCount": 13902,
+      "depthMin": 6.2,
+      "depthMax": 483.7
+    },
+    {
+      "zone": "cot",
+      "vertexOffset": 218618,
+      "vertexCount": 372,
+      "indexOffset": 1265838,
+      "indexCount": 1938,
+      "depthMin": 7.3,
+      "depthMax": 139.6
+    },
+    {
+      "zone": "him",
+      "vertexOffset": 218990,
+      "vertexCount": 2970,
+      "indexOffset": 1267776,
+      "indexCount": 16290,
+      "depthMin": 1.6,
+      "depthMax": 40.1
+    },
+    {
+      "zone": "kur",
+      "vertexOffset": 221960,
+      "vertexCount": 29948,
+      "indexOffset": 1284066,
+      "indexCount": 176214,
+      "depthMin": 7.5,
+      "depthMax": 663.7
+    },
+    {
+      "zone": "van",
+      "vertexOffset": 251908,
+      "vertexCount": 3327,
+      "indexOffset": 1460280,
+      "indexCount": 18582,
+      "depthMin": 4.5,
+      "depthMax": 344
+    }
+  ]
+}

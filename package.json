@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "bun run dev.js",
-    "build": "rm -rf dist && bun build ./index.html --outdir=dist --minify && cp -R img dist/img",
+    "build": "rm -rf dist && bun build ./index.html --outdir=dist --minify && cp -R img dist/img && mkdir -p dist/data && cp data/slab2_surfaces.bin data/slab2_surfaces.json dist/data/",
     "prep-data": "bun run scripts/prep-atlas-data.js",
-    "prep-slab2": "bun run scripts/prep-slab2.js"
+    "prep-slab2": "bun run scripts/prep-slab2.js",
+    "prep-slab2-surfaces": "bun run scripts/prep-slab2-surfaces.js"
   },
   "dependencies": {
     "earcut": "^3.0.2",
@@ -15,6 +16,7 @@
   },
   "devDependencies": {
     "@types/three": "^0.184.0",
+    "h5wasm": "^0.10.1",
     "playwright": "^1.59.1"
   }
 }

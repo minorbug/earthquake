@@ -32,7 +32,7 @@ Sourced via https://github.com/fraxen/tectonicplates (no explicit license
 declared upstream; the underlying PB2002 paper is published in a peer-reviewed
 journal under standard academic-citation expectations).
 
-## `slab2_contours.geojson`
+## `slab2_contours.geojson`, `slab2_surfaces.bin`, `slab2_surfaces.json`
 
 Derived from USGS Slab2 (Hayes et al., 2018) — release DOI 10.5066/F7PV6JNV.
 Sourced via https://www.sciencebase.gov/catalog/item/5aa1b00ee4b0b1c392e86467.
@@ -42,10 +42,18 @@ Citation:
   Furtney, M., & Smoczyk, G. M. (2018). "Slab2, a comprehensive subduction
   zone geometry model." Science 362(6410): 58–61. doi:10.1126/science.aat4723
 
-This is a derivative work — features filtered to 8 chosen depth contours
-(40/100/200/300/400/500/600/700 km) and trimmed to a `{zone, depth_km}`
-property bag. License: U.S. Government work, public domain — no attribution
-legally required, but the canonical citation is included for credit.
+`slab2_contours.geojson` is a derivative — features filtered to 8 chosen
+depth contours (40/100/200/300/400/500/600/700 km) and trimmed to a
+`{zone, depth_km}` property bag.
+
+`slab2_surfaces.bin` + `slab2_surfaces.json` are also derivatives — per-zone
+indexed triangle meshes built from the Slab2 `*_dep.grd` rasters at 0.1°
+downsample (every 2nd grid cell), with NaN/antimeridian/depth-cap clipping.
+Format is documented inline in `scripts/prep-slab2-surfaces.js`.
+
+License (all of the above): U.S. Government work, public domain — no
+attribution legally required, but the canonical citation is included
+for credit.
 
 ## `ne_110m_land.geojson`, `ne_110m_antarctica.geojson`
 
