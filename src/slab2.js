@@ -2,8 +2,9 @@
 //
 // Builds one LineSegments2 per subduction zone, with all 8 depth contours
 // combined inside the per-zone geometry. Per-vertex colors come from the
-// active color strategy. A `uGlow` uniform on each material allows future
-// click-to-glow per zone — not wired to interaction yet.
+// active color strategy. A `uGlowRef = { value: 0 }` on each mesh.userData
+// reserves the click-to-glow hook — shader-side wiring (uniform injection
+// + fragment patch) is deferred to the future click-to-glow handler task.
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
