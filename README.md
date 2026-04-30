@@ -11,6 +11,7 @@ Earthquake is a personal project that I decided to create to brush up on newer w
 
 - **Plate boundaries:** PB2002 (Bird, P. 2003. "An updated digital model of plate boundaries." *Geochemistry, Geophysics, Geosystems* 4(3): 1027. doi:10.1029/2001GC000252). Sourced from [fraxen/tectonicplates](https://github.com/fraxen/tectonicplates).
 - **Active faults:** GEM Global Active Faults Database (Styron, R. & Pagani, M. 2020. "The GEM Global Active Faults Database." *Earthquake Spectra* 36(1_suppl): 160–180. doi:10.1177/8755293020944182). Sourced from [GEMScienceTools/gem-global-active-faults](https://github.com/GEMScienceTools/gem-global-active-faults). License: **CC-BY-SA 4.0** — derivatives (including this repository's `data/gem_active_faults_trimmed.geojson`) must be redistributed under the same license.
+- **Subducting slabs:** USGS Slab2 (Hayes, G. P. et al. 2018. "Slab2, a comprehensive subduction zone geometry model." *Science* 362(6410): 160–180. doi:10.1126/science.aat4723; data release doi:10.5066/F7PV6JNV). Sourced from [USGS ScienceBase](https://www.sciencebase.gov/catalog/item/5aa1b00ee4b0b1c392e86467). License: U.S. Government work, public domain.
 - **Land + countries:** Natural Earth public-domain vector data via [nvkelso/natural-earth-vector](https://github.com/nvkelso/natural-earth-vector).
 - **Earthquake feed:** USGS Earthquake Hazards Program real-time GeoJSON feed.
 
