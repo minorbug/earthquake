@@ -245,8 +245,8 @@ bun -e 'const j=JSON.parse(await Bun.file("data/slab2_contours.geojson").text())
 ```
 
 Expected:
-- File size ~1–2 MB.
-- Feature count in the low thousands (1500–3500 typical).
+- File size ~700–900 KB.
+- Feature count ~150–250 (170 typical for the current 27-zone Slab2 release with the 8-depth filter).
 - `depths:` should print exactly `[ 40, 100, 200, 300, 400, 500, 600, 700 ]`.
 - `zones:` should print 23–27 (some overturning zones may legitimately be skipped) with codes like `alu, cal, cas, cot, hal, hel, him, hin, izu, ker, kur, mak, man, mex, mue, pam, phi, png, puy, ryu, sam, sco, sol, sul, sum, van`.
 
