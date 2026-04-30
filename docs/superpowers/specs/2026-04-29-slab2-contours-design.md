@@ -70,13 +70,14 @@ src/slab2.js                                  (new — sibling of atlas.js)
     groups features by `zone` (~27 groups)
     for each zone:
       builds LineGeometry combining all 8 depth contours,
-        each contour positioned at radius * (1 - depth_km / EARTH_RADIUS_KM),
+        each contour positioned at radius `CRUST_RADIUS - depth_km` (km),
       builds per-vertex color buffer from the active strategy,
       calls LineGeometry.setColors(buffer)  ← NOT setAttribute('color', ...)
       builds LineMaterial with vertexColors: true, transparent: true,
-      patches material via onBeforeCompile to inject a `uGlow` uniform,
+      stores a uGlowRef = { value: 0 } on mesh.userData (shader-side
+        wiring deferred — see Render details / future-flex hooks),
       creates LineSegments2 with renderOrder = 1 (below plate boundaries),
-      mesh.userData = { zone, isSlab: true, glowUniform },
+      mesh.userData = { zone, isSlab: true, uGlowRef },
       adds to scene; tracks in slabZones[zone]
   exports: {
     setColorStrategy(name)   // rewrites every zone's color buffer
@@ -96,10 +97,9 @@ src/main.js                                   (modified)
 
 **Per-vertex colors via `LineGeometry.setColors()`.** This is `LineGeometry`'s own API for fat lines — distinct from a normal BufferGeometry's `setAttribute('color', ...)`. The fat-line geometry expands each input vertex internally into instanced segment geometry, and `setColors([r,g,b,r,g,b,...])` is the right entry point. **Do not mix the two paths** — they don't agree on what counts as a vertex.
 
-**Material with glow uniform via `onBeforeCompile`.** Standard `LineMaterial` constructor with `vertexColors: true`, `transparent: true`, plus an `onBeforeCompile` hook that:
-1. Adds a `uGlow` uniform (default `value: 0.0`).
-2. Patches the fragment shader's color output to multiply final color by `(1.0 + uGlow * 2.0)` (or similar — exact constant tunable).
-3. Stores the uniform reference on `mesh.userData.glowUniform` so `setGlow(zone, factor)` can mutate it directly.
+**Material baseline + future glow hook.** Standard `LineMaterial` constructor with `vertexColors: true`, `transparent: true`. Each mesh stores a `uGlowRef = { value: 0.0 }` on `mesh.userData`, and `setGlow(zone, factor)` mutates that ref's `.value`.
+
+The shader-side wiring (using `onBeforeCompile` to inject a `uGlow` uniform and patch the fragment shader's color output to brighten by `uGlow`) is **deferred to the click-to-glow handler task**, not done in this layer. Reason: the regex against the live `LineMaterial` fragment-shader source is brittle; the future task can pin it against the actual shader at click-handler-implementation time rather than guessing here. For v1 of the slab layer, `setGlow` stores the value but has no visual effect.
 
 `onBeforeCompile` is preferred over subclassing `LineMaterial` because LineMaterial manages internal uniforms (resolution, dash params) that are easy to break in a subclass.
 
@@ -111,7 +111,7 @@ src/main.js                                   (modified)
 
 **`viridis` (default).** Purple → blue → teal → green → yellow, perceptually uniform. Each of the 8 depths samples a fixed point on the colormap. Implemented as a hand-coded 8-entry lookup or via a small viridis hex-string table — no dependency needed.
 
-**`markerExtended`.** Reuses the existing earthquake-marker palette (`tuning.emberHex`, `midHex`, `cyanHex`) for shallow contours (50, 100, 200, 300 km), then extends into indigo / near-black for the deep contours (400, 500, 600, 700 km). Visual continuity with the markers — same depth, similar hue family.
+**`markerExtended`.** Reuses the existing earthquake-marker palette (`tuning.emberHex`, `midHex`, `cyanHex`) for shallow contours (40, 100, 200, 300 km), then extends into indigo / near-black for the deep contours (400, 500, 600, 700 km). Visual continuity with the markers — same depth, similar hue family.
 
 **`single`.** All 8 depths share one muted color (a tan/brown like `#7a5a3c`, similar to faults). Depth distinction comes only from the contour's radial position. Useful as a low-information-density fallback or for debugging the geometry without the color noise.
 
