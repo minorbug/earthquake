@@ -3,6 +3,7 @@
 .superpowers/
 node_modules/
 dist/
+data/.cache/
 
 # Unrelated nested iOS Xcode project sitting in this repo
 Quakes/

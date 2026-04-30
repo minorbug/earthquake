@@ -5,9 +5,11 @@ const STORAGE_KEY = 'eq-atlas-tuning';
 
 const defaults = {
     // Colors
-    oceanColor:      '#0a1428',
-    landColor:       '#3e5d8a',
-    antarcticaColor: '#9aa8c5',
+    oceanColor:        '#0a1428',  // legacy — superseded by deepOceanColor; kept for storage compat
+    deepOceanColor:    '#0a1428',  // ocean color at max depth (trenches)
+    shallowOceanColor: '#1c3358',  // ocean color near sea level (continental shelves)
+    landColor:         '#3e5d8a',
+    antarcticaColor:   '#9aa8c5',
     ridgeColor:      '#d840ff', // OSR, CRB
     subColor:        '#6020c0', // OCB, CCB, SUB
     transformColor:  '#f0c060', // OTF, CTF
@@ -16,8 +18,9 @@ const defaults = {
     // Geometry
     boundaryWidth:   1.0,
     // Visibility
-    showLand:        true,
-    showBoundaries:  true,
+    showLand:         true,
+    showBoundaries:   true,
+    showBathymetry:   true,   // ocean depth gradient (ETOPO 2022)
     // Faults (GEM Global Active Faults)
     showFaults:    true,
     faultColor:    '#7a5a3c',
@@ -82,7 +85,8 @@ export function buildAtlasGui() {
     const bindVis   = (ctl) => { ctl.onChange(() => { save(); fireVisibility(); }); allControllers.push(ctl); return ctl; };
 
     const fColors = gui.addFolder('Colors');
-    bindColor(fColors.addColor(atlasTuning, 'oceanColor'));
+    bindColor(fColors.addColor(atlasTuning, 'shallowOceanColor'));
+    bindColor(fColors.addColor(atlasTuning, 'deepOceanColor'));
     bindColor(fColors.addColor(atlasTuning, 'landColor'));
     bindColor(fColors.addColor(atlasTuning, 'antarcticaColor'));
     bindColor(fColors.addColor(atlasTuning, 'ridgeColor'));
@@ -114,6 +118,7 @@ export function buildAtlasGui() {
     const fVis = gui.addFolder('Visibility');
     bindVis(fVis.add(atlasTuning, 'showLand'));
     bindVis(fVis.add(atlasTuning, 'showBoundaries'));
+    bindVis(fVis.add(atlasTuning, 'showBathymetry'));
 
     gui.add({
         reset: () => {

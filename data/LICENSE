@@ -55,6 +55,26 @@ License (all of the above): U.S. Government work, public domain — no
 attribution legally required, but the canonical citation is included
 for credit.
 
+## `bathymetry.png`
+
+Derived from NOAA NCEI ETOPO 2022 60-arc-second bedrock elevation grid.
+
+Citation:
+  NOAA National Centers for Environmental Information (2022). "ETOPO 2022
+  15 Arc-Second Global Relief Model." doi:10.25921/fd45-gt74
+
+This is a derivative work — full-resolution NetCDF grid downsampled to
+720×360, applied a sqrt depth curve (emphasizes trench/abyssal contrast),
+and encoded as 8-bit grayscale PNG. Land is masked to a sentinel value.
+Format/process is documented inline in `scripts/prep-bathymetry.js`.
+
+The raw NetCDF source is cached under `data/.cache/etopo_2022_60s.nc`
+(gitignored — not committed; ~466 MB). Re-running `bun run prep-bathymetry`
+uses the cache if present.
+
+License: U.S. Government work, public domain — no attribution legally
+required, but the canonical citation is included for credit.
+
 ## `ne_110m_land.geojson`, `ne_110m_antarctica.geojson`
 
 Derived from Natural Earth (https://www.naturalearthdata.com/), which is in

@@ -12,10 +12,14 @@ import {
     SphereGeometry,
     ShaderMaterial,
     CanvasTexture,
+    DataTexture,
+    TextureLoader,
     LinearFilter,
+    RedFormat,
     DoubleSide,
     Color,
 } from 'three';
+import bathymetryUrl from '../data/bathymetry.png' with { type: 'file' };
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
 import { LineSegments2 }        from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineMaterial }         from 'three/examples/jsm/lines/LineMaterial.js';
@@ -115,11 +119,15 @@ const crustVert = /* glsl */`
 
 // Crust shader: sample the rasterized land/antarctica/ocean mask and emit
 // the corresponding tuning color. Branches on the category byte: ocean (0),
-// land (~85), antarctica (~170).
+// land (~85), antarctica (~170). Where the mask says ocean, optionally
+// modulate by sampled bathymetry depth (lerps deepOceanColor → shallowOceanColor).
 const crustFrag = /* glsl */`
     precision highp float;
     uniform sampler2D mask;
-    uniform vec3 oceanColor;
+    uniform sampler2D bathymetry;
+    uniform vec3 deepOceanColor;
+    uniform vec3 shallowOceanColor;
+    uniform bool showBathymetry;
     uniform vec3 landColor;
     uniform vec3 antarcticaColor;
     varying vec3 vN;
@@ -133,7 +141,15 @@ const crustFrag = /* glsl */`
         float v = (90.0 - lat) / 180.0;
 
         float cat = texture2D(mask, vec2(u, v)).r;
-        vec3 color = oceanColor;
+
+        vec3 oceanRgb = deepOceanColor;
+        if (showBathymetry) {
+            // Bathymetry texture: 0 = max depth (darkest), 1 = sea level (brightest).
+            float depth01 = texture2D(bathymetry, vec2(u, v)).r;
+            oceanRgb = mix(deepOceanColor, shallowOceanColor, depth01);
+        }
+
+        vec3 color = oceanRgb;
         if (cat > 0.55) color = antarcticaColor;
         else if (cat > 0.20) color = landColor;
 
@@ -155,12 +171,33 @@ export function loadAtlas({ scene, radius }) {
     maskTex.magFilter = LinearFilter;
     maskTex.generateMipmaps = false;
 
+    // Bathymetry texture. Async-loaded; until ready the shader sees a 1×1
+    // black DataTexture so depth01=0 → ocean shows as deepOceanColor (no flash
+    // of incorrect color on first frame).
+    const bathymetryTex = new DataTexture(new Uint8Array([0]), 1, 1, RedFormat);
+    bathymetryTex.needsUpdate = true;
+    bathymetryTex.flipY = false;
+    bathymetryTex.minFilter = LinearFilter;
+    bathymetryTex.magFilter = LinearFilter;
+    bathymetryTex.generateMipmaps = false;
+    new TextureLoader().load(bathymetryUrl, (loaded) => {
+        loaded.flipY = false;
+        loaded.minFilter = LinearFilter;
+        loaded.magFilter = LinearFilter;
+        loaded.generateMipmaps = false;
+        crustMat.uniforms.bathymetry.value = loaded;
+        crustMat.uniformsNeedUpdate = true;
+    });
+
     const crustMat = new ShaderMaterial({
         uniforms: {
-            mask:            { value: maskTex },
-            oceanColor:      { value: new Color(atlasTuning.oceanColor) },
-            landColor:       { value: new Color(atlasTuning.showLand ? atlasTuning.landColor : atlasTuning.oceanColor) },
-            antarcticaColor: { value: new Color(atlasTuning.showLand ? atlasTuning.antarcticaColor : atlasTuning.oceanColor) },
+            mask:              { value: maskTex },
+            bathymetry:        { value: bathymetryTex },
+            deepOceanColor:    { value: new Color(atlasTuning.deepOceanColor) },
+            shallowOceanColor: { value: new Color(atlasTuning.shallowOceanColor) },
+            showBathymetry:    { value: atlasTuning.showBathymetry },
+            landColor:         { value: new Color(atlasTuning.showLand ? atlasTuning.landColor : atlasTuning.deepOceanColor) },
+            antarcticaColor:   { value: new Color(atlasTuning.showLand ? atlasTuning.antarcticaColor : atlasTuning.deepOceanColor) },
         },
         vertexShader: crustVert,
         fragmentShader: crustFrag,
@@ -253,13 +290,17 @@ export function loadAtlas({ scene, radius }) {
 
     // Live tuning
     function applyColors(t) {
-        crustMat.uniforms.oceanColor.value.set(t.oceanColor);
+        crustMat.uniforms.deepOceanColor.value.set(t.deepOceanColor);
+        crustMat.uniforms.shallowOceanColor.value.set(t.shallowOceanColor);
+        crustMat.uniforms.showBathymetry.value = t.showBathymetry;
         if (t.showLand) {
             crustMat.uniforms.landColor.value.set(t.landColor);
             crustMat.uniforms.antarcticaColor.value.set(t.antarcticaColor);
         } else {
-            crustMat.uniforms.landColor.value.set(t.oceanColor);
-            crustMat.uniforms.antarcticaColor.value.set(t.oceanColor);
+            // Ocean-only mode hides land/antarctica by painting them with the
+            // deep-ocean color (so the bathymetric ocean still shows through).
+            crustMat.uniforms.landColor.value.set(t.deepOceanColor);
+            crustMat.uniforms.antarcticaColor.value.set(t.deepOceanColor);
         }
         for (const g of lineGroups) {
             if (!g.material || !g.material.color) continue;   // guard: ShaderMaterial has no .color
