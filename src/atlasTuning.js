@@ -26,7 +26,7 @@ const defaults = {
     // Slabs (USGS Slab2)
     // Surfaces are the primary visual; ring overlay defaults OFF.
     showSlabSurfaces:   true,
-    slabSurfaceOpacity: 0.3,
+    slabSurfaceOpacity: 0.22,   // DoubleSide doubles alpha on curved sheets; compensate
     slabColorStrategy:  'viridis',  // shared by surfaces + rings
     showSlabs:          false,      // contour ring overlay (was true before surfaces shipped)
     slabWidth:          0.5,        // multiplier on boundaryWidth

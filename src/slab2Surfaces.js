@@ -11,7 +11,7 @@ import {
     MeshBasicMaterial,
     BufferGeometry,
     BufferAttribute,
-    FrontSide,
+    DoubleSide,
 } from 'three';
 import { atlasTuning, onAtlasColorChange, onAtlasVisibilityChange } from './atlasTuning.js';
 import { continuousColorFromDepth } from './slabColors.js';
@@ -78,8 +78,8 @@ export function loadSlab2Surfaces({ scene }) {
                 vertexColors: true,
                 transparent: true,
                 opacity: atlasTuning.slabSurfaceOpacity,
-                side: FrontSide,
-                depthWrite: false,
+                side: DoubleSide,        // see slabs from either viewing angle
+                depthWrite: false,       // clean translucency layering
             });
 
             // Future click-to-glow hook: same pattern as the contour layer.
