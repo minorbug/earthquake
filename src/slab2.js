@@ -4,8 +4,7 @@
 // combined inside the per-zone geometry. Per-vertex colors come from the
 // active color strategy. A `uGlow` uniform on each material allows future
 // click-to-glow per zone — not wired to interaction yet.
-import { Color } from 'three';
-import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import slabsJson from '../data/slab2_contours.geojson' with { type: 'json' };
@@ -40,8 +39,9 @@ function geoToVec3Depth(lat, lng, depthKm, crustRadius) {
 }
 
 // Build one zone mesh. Combines all features for the zone into one
-// LineGeometry. Each feature is a LineString; we expand it into adjacent
-// vertex pairs (segment endpoints) since LineSegments2 expects segment data.
+// LineSegmentsGeometry. Each feature is a LineString; we expand it into
+// adjacent vertex pairs (segment endpoints) since LineSegments2 expects
+// segment-pair data, not a continuous polyline.
 function buildZoneMesh(zone, features, strategy, crustRadius) {
     const positions = [];   // flat [x,y,z, x,y,z, ...] in segment order
     const colors = [];      // flat [r,g,b, r,g,b, ...] one per *original* vertex
@@ -60,10 +60,18 @@ function buildZoneMesh(zone, features, strategy, crustRadius) {
         }
     }
 
-    const geo = new LineGeometry();
+    // LineSegmentsGeometry interprets positions as independent segment pairs:
+    // each 6 floats (x1,y1,z1, x2,y2,z2) defines one segment. That matches
+    // our segment-pair layout above. LineGeometry would chain everything as
+    // a polyline and draw spurious cross-feature arcs between unrelated
+    // depth contours within a zone. Same class atlas.js uses for plate
+    // boundaries and faults.
+    //
+    // IMPORTANT: setColors() is a fat-line API on the geometry; do NOT mix
+    // it with a normal BufferGeometry color attribute — they're different
+    // paths.
+    const geo = new LineSegmentsGeometry();
     geo.setPositions(new Float32Array(positions));
-    // IMPORTANT: LineGeometry has its own setColors() API for fat lines.
-    // Do NOT use setAttribute('color', ...) — they're different paths.
     geo.setColors(new Float32Array(colors));
 
     const mat = new LineMaterial({
