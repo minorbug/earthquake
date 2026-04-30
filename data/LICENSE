@@ -1,0 +1,40 @@
+# Data Licenses
+
+The bundled datasets in this directory are sourced from third parties and
+retain their upstream licenses. The project's MIT license (top-level
+`LICENSE`) does NOT supersede these.
+
+## `gem_active_faults_trimmed.geojson`
+
+Derived from the GEM Global Active Faults Database
+(https://github.com/GEMScienceTools/gem-global-active-faults).
+
+Citation:
+  Styron, R. & Pagani, M. 2020. "The GEM Global Active Faults Database."
+  Earthquake Spectra 36(1_suppl): 160–180. doi:10.1177/8755293020944182
+
+License: **CC-BY-SA 4.0** (https://creativecommons.org/licenses/by-sa/4.0/)
+
+This is a derivative work — features have been filtered (PB2002-derived
+entries removed to avoid double-rendering) and the property bag has been
+trimmed. Per the share-alike clause, redistributions of this file must be
+under the same CC-BY-SA 4.0 license, and must include this attribution.
+
+## `pb2002_boundaries.geojson`, `pb2002_steps_with_plates.geojson`
+
+Derived from the PB2002 plate boundary dataset.
+
+Citation:
+  Bird, P. 2003. "An updated digital model of plate boundaries."
+  Geochemistry, Geophysics, Geosystems 4(3): 1027. doi:10.1029/2001GC000252
+
+Sourced via https://github.com/fraxen/tectonicplates (no explicit license
+declared upstream; the underlying PB2002 paper is published in a peer-reviewed
+journal under standard academic-citation expectations).
+
+## `ne_110m_land.geojson`, `ne_110m_antarctica.geojson`
+
+Derived from Natural Earth (https://www.naturalearthdata.com/), which is in
+the public domain. No attribution required, though it is appreciated.
+
+Sourced via https://github.com/nvkelso/natural-earth-vector.
