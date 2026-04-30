@@ -8,6 +8,7 @@ import { attachControls } from './controls.js';
 import { showDetail, hideDetail } from './detail.js';
 import { atlasTuning, buildAtlasGui } from './atlasTuning.js';
 import { loadAtlas } from './atlas.js';
+import { loadSlab2 } from './slab2.js';
 
 const probe = document.createElement('canvas');
 if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
@@ -21,6 +22,7 @@ buildGui();
 buildAtlasGui();
 const atlas = loadAtlas({ scene, radius: CRUST_RADIUS });
 const crust = atlas.crust;
+const slabs = loadSlab2({ scene, radius: CRUST_RADIUS });
 
 const loadingOverlay = document.getElementById('loadingoverlay');
 const clock = new Clock();
