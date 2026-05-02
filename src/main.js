@@ -10,6 +10,7 @@ import { atlasTuning, buildAtlasGui } from './atlasTuning.js';
 import { loadAtlas } from './atlas.js';
 import { loadSlab2 } from './slab2.js';
 import { loadSlab2Surfaces } from './slab2Surfaces.js';
+import { loadVolcanoes } from './volcanoes.js';
 
 const probe = document.createElement('canvas');
 if (!probe.getContext('webgl2') && !probe.getContext('webgl')) {
@@ -25,6 +26,12 @@ const atlas = loadAtlas({ scene, radius: CRUST_RADIUS });
 const crust = atlas.crust;
 const slabs = loadSlab2({ scene, radius: CRUST_RADIUS });
 const slabSurfaces = loadSlab2Surfaces({ scene });
+const volcanoes = loadVolcanoes({ scene: crust });
+// Register the volcanoes Points mesh in the markers list so the raycaster
+// in controls.js picks it up alongside earthquake blobs. Visibility is
+// still owned by volcanoes.js (markers.js's update loop skips non-blob
+// entries via the _blob check).
+if (volcanoes) getAllMarkers().push(volcanoes.points);
 
 const loadingOverlay = document.getElementById('loadingoverlay');
 const clock = new Clock();

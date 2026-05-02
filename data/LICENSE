@@ -75,6 +75,24 @@ uses the cache if present.
 License: U.S. Government work, public domain — no attribution legally
 required, but the canonical citation is included for credit.
 
+## `volcanoes_holocene.geojson`
+
+Derived from the Smithsonian Institution Global Volcanism Program (GVP) —
+"Volcanoes of the World" database, Holocene subset.
+
+Citation:
+  Global Volcanism Program. Volcanoes of the World. Smithsonian Institution.
+  https://volcano.si.edu
+
+Smithsonian's direct download endpoints reject automated requests; the prep
+script fetches the same upstream CSV via the scottyhq/votw GitHub mirror
+(https://github.com/scottyhq/votw). The GPL on that repo applies to its
+notebook code, not to the underlying CSV data — which carries Smithsonian's
+own terms.
+
+License: free academic / educational / non-commercial use with attribution
+to the Smithsonian GVP.
+
 ## `ne_110m_land.geojson`, `ne_110m_antarctica.geojson`
 
 Derived from Natural Earth (https://www.naturalearthdata.com/), which is in

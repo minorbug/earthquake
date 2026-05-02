@@ -104,6 +104,10 @@ export function createBlobMarker(data) {
 export function updateUniforms(time) {
     if (!allMarkers.length) return;
     for (const m of allMarkers) {
+        // Skip entries that aren't earthquake-blob markers (e.g., the
+        // volcanoes Points mesh registered for raycasting). Their owning
+        // module manages their visibility.
+        if (!m.userData._blob) continue;
         m.visible = !!tuning.visible;
 
         const blob = m.userData._blob;

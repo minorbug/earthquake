@@ -16,6 +16,10 @@ const defaults = {
     midHex: '#ff7733',
     cyanHex: '#22ccff',
     depthNormKm: 300,
+    // Volcanoes (Smithsonian GVP — Holocene-active)
+    showVolcanoes: true,
+    volcanoColor:  '#ff5533',
+    volcanoSize:   12,
     // Globals
     visible: true,
 };
@@ -39,6 +43,16 @@ function save() {
     } catch (e) {}
 }
 
+// External listeners for tuning changes — used by volcanoes.js (and any
+// future per-event layer) to react when relevant tunables change.
+const tuningListeners = [];
+export function onTuningChange(cb) { tuningListeners.push(cb); }
+function fireTuning() {
+    for (const cb of tuningListeners) {
+        try { cb(tuning); } catch (e) { console.error('tuning listener:', e); }
+    }
+}
+
 function copyJson() {
     const snap = {};
     for (const k in defaults) snap[k] = tuning[k];
@@ -60,7 +74,7 @@ export function buildGui() {
     const gui = new GUI({ width: 300 });
     const allControllers = [];
 
-    const bind = (ctl) => { ctl.onChange(save); allControllers.push(ctl); return ctl; };
+    const bind = (ctl) => { ctl.onChange(() => { save(); fireTuning(); }); allControllers.push(ctl); return ctl; };
 
     const fBlob = gui.addFolder('Blob');
     bind(fBlob.add(tuning, 'radiusMin',     5,  200));
@@ -76,6 +90,11 @@ export function buildGui() {
     bind(fColor.addColor(tuning, 'cyanHex'));
     bind(fColor.add(tuning, 'depthNormKm', 50, 1000, 10));
 
+    const fVolc = gui.addFolder('Volcanoes');
+    bind(fVolc.add(tuning, 'showVolcanoes'));
+    bind(fVolc.addColor(tuning, 'volcanoColor'));
+    bind(fVolc.add(tuning, 'volcanoSize', 4, 32, 1));
+
     const fGlobals = gui.addFolder('Globals');
     bind(fGlobals.add(tuning, 'visible'));
     fGlobals.add({ copyAsJson: copyJson }, 'copyAsJson').name('Copy as JSON');
@@ -84,6 +103,7 @@ export function buildGui() {
             for (const k in defaults) tuning[k] = defaults[k];
             save();
             allControllers.forEach(c => c.updateDisplay());
+            fireTuning();
         },
     }, 'reset').name('Reset to defaults');
 }

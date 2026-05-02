@@ -8,7 +8,8 @@
     "prep-data": "bun run scripts/prep-atlas-data.js",
     "prep-slab2": "bun run scripts/prep-slab2.js",
     "prep-slab2-surfaces": "bun run scripts/prep-slab2-surfaces.js",
-    "prep-bathymetry": "bun run scripts/prep-bathymetry.js"
+    "prep-bathymetry": "bun run scripts/prep-bathymetry.js",
+    "prep-volcanoes": "bun run scripts/prep-volcanoes.js"
   },
   "dependencies": {
     "earcut": "^3.0.2",

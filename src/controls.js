@@ -67,6 +67,10 @@ export function attachControls({ camera, camGroup, markers, onSelect, onMiss }) 
     document.addEventListener('keydown', onKeyDown, false);
 
     const raycaster = new Raycaster();
+    // Points raycasting needs a generous threshold at planet scale — default
+    // is 1 world unit (~1 km), too tight for our 12 px volcano icons. ~50 km
+    // gives clicks ~6 px tolerance around each icon at typical zoom.
+    raycaster.params.Points.threshold = 50;
     const ndc = new Vector2();
 
     function processClick() {
@@ -80,6 +84,13 @@ export function attachControls({ camera, camGroup, markers, onSelect, onMiss }) 
             const o = hit.object;
             if (o.userData && o.userData._kind === 'blob') {
                 onSelect(o.parent);
+                return;
+            }
+            if (o.userData && o.userData._kind === 'volcano-points') {
+                const feature = o.userData.features[hit.index];
+                if (!feature) continue;
+                const [lng, lat] = feature.geometry.coordinates;
+                onSelect({ ...feature.properties, lat, lng, _kind: 'volcano' });
                 return;
             }
         }
