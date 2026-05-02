@@ -90,7 +90,9 @@ export function attachControls({ camera, camGroup, markers, onSelect, onMiss }) 
                 const feature = o.userData.features[hit.index];
                 if (!feature) continue;
                 const [lng, lat] = feature.geometry.coordinates;
-                onSelect({ ...feature.properties, lat, lng, _kind: 'volcano' });
+                // main.js's onSelect reads marker.userData; mirror that
+                // shape rather than passing the data object directly.
+                onSelect({ userData: { ...feature.properties, lat, lng, _kind: 'volcano' } });
                 return;
             }
         }
